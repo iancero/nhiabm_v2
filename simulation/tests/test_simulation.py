@@ -199,6 +199,7 @@ class TestSimulation:
 
         assert len(sim.history) == 1
 
-        sim.go(ticks=75)
+        sim.go()
 
-        assert len(sim.history) == 76
+        # number of ticks from params, plus 1 for setup
+        assert len(sim.history) == 31

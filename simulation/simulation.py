@@ -91,8 +91,10 @@ class Simulation:
 
         self.cur_tick = self.cur_tick + 1
 
-    def go(self, ticks=10):
-        for t in itertools.repeat(None, ticks):
+    def go(self):
+        self.validate()
+
+        while self.cur_tick < self.total_ticks:
             self.tick()
 
         self.validate()

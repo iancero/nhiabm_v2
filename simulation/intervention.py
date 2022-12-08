@@ -135,3 +135,31 @@ class IndividualIntervention(Intervention):
             for i in treatable_beh:
                 if random.random() < self.p_beh_change:
                     enrollee.beh[i] = 0
+
+
+class MockIntervention(Intervention):
+    def setup(self, agents, network, **kwargs):
+        super().setup(agents, network, **kwargs)
+        self.tar_beh = self.target_behaviors(self.sui_ORs, self.tar_severity)
+
+        self.enrolled_names = []
+        for agent in agents:
+            if random.random() < self.p_enrolled:
+                self.enrolled_names.append(agent.name)
+
+    def intervene(self, agents, network):
+
+        # There is a random change that the targeted behaviors will simply
+        # be shuffled for each agent
+        for agent in agents:
+            if random.random() < self.p_beh_change:
+                rep_beh = [b for i, b in enumerate(agent.beh) if i in self.tar_beh]
+                random.shuffle(rep_beh)
+
+                for rep_i, beh_i in enumerate(self.tar_beh):
+                    agent.beh[beh_i] = rep_beh[rep_i]
+
+        # There is a random chance edges will simply be deleted
+        for e in network.es:
+            if random.random() < self.p_rewire:
+                network.delete_edges(e.index)

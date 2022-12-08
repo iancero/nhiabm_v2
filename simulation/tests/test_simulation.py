@@ -172,8 +172,8 @@ class TestSimulation:
             "intervention_params": [
                 {
                     "intv_class_name": "NetworkIntervention",
-                    "start_tick": 50,
-                    "duration": 10,
+                    "start_tick": 15,
+                    "duration": 3,
                     "tar_severity": [0.40, 1],
                     "p_rewire": 0.25,
                     "p_enrolled": 1,
@@ -181,8 +181,8 @@ class TestSimulation:
                 },
                 {
                     "intv_class_name": "IndividualIntervention",
-                    "start_tick": 60,
-                    "duration": 15,
+                    "start_tick": 20,
+                    "duration": 5,
                     "tar_severity": [0.40, 1],
                     "p_rewire": 0.25,
                     "p_enrolled": 1,

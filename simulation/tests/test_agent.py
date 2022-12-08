@@ -260,6 +260,19 @@ class TestAgent:
         a_odds_ratio = a_odds / general_odds
         assert round(a_odds / general_odds, 10) == 8  # with beh_odds_ratios = [2, 3, 4]
 
+        # When accounting for ave_beh == 2
+        a.beh = [1, 1, 0]
+        p = a.suicide_risk(odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, ave_beh=2)
+        assert round(p, 4) == gen_sui_prev
+
+        # When accounting for ave_beh == 1
+        a.beh = [1, 1, 1]
+        p = a.suicide_risk(odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, ave_beh=1)
+        a_odds = p / (1 - p)
+        general_odds = gen_sui_prev / (1 - gen_sui_prev)
+        a_odds_ratio = a_odds / general_odds
+        assert round(a_odds_ratio, 8) == 4
+
     def test_consider_suicide(self):
         a = Agent(id=1, n_beh=3, max_alters=3, baserates=None)
 

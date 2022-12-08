@@ -3,7 +3,7 @@ import itertools
 import json
 import random
 import igraph as ig
-from intervention import NetworkIntervention, IndividualIntervention
+from intervention import NetworkIntervention, IndividualIntervention, MockIntervention
 from agent import Agent
 
 
@@ -106,7 +106,13 @@ class Simulation:
         vertex_names = [v["name"] for v in self.network.vs]
         assert set(agent_names) == set(vertex_names)
 
-        assert len(self.sui_ORs) == len(self.agents[0].beh)
+        assert self.n_beh == len(self.agents[0].beh)
+        assert self.n_beh == len(self.sui_ORs)
+        assert self.n_beh == len(self.baserates)
+
+        for intv in self.interventions:
+            assert intv.start_tick <= self.total_ticks
+            assert (intv.start_tick + intv.duration - 1) <= self.total_ticks
 
         return True
 

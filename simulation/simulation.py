@@ -142,12 +142,23 @@ class Simulation:
 
         return verts
 
+    def interventions_to_dict(self):
+        intv_dicts = []
+        for intv in self.interventions:
+            intv_dict = intv.as_dict()
+            intv_dicts.append(intv_dict)
+
+        return intv_dicts
+
     def record_history(self):
         a = copy.deepcopy(self.agents_to_dict())
         e = copy.deepcopy(self.edges_to_dict())
         v = copy.deepcopy(self.verts_to_dict())
+        i = copy.deepcopy(self.interventions_to_dict())
 
-        self.history.append({"agents": a, "edges": e, "vertices": v})
+        self.history.append(
+            {"agents": a, "edges": e, "vertices": v, "interventions": i}
+        )
 
     def remaining_ticks(self):
         return self.total_ticks - self.cur_tick

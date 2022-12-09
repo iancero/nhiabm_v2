@@ -1,0 +1,18 @@
+parameter_name,utilized_by,param_values,comment
+ticks,simulation,,
+n_interactions**,,,"needs to be added to allow for a high number of interactions, each with a low probability of emulation**"
+n_agents,simulation,"5, 10, 15, 30",
+p_edge,simulation,,
+n_beh,agent,"10, 30",
+baserates,agent,,
+p_spon_change,agent,,
+p_emul,agent,".10, .25, .50",
+sim_thresh,agent,".10, .25, .50, .75, .90",
+gen_sui_prev,agent,".0001, .001, .01",Calibrate these to be equal to weekly prevalences**
+sui_ORs,"agent, intervention","Uniform(1, 3)",
+start_tick,intervention,,
+duration,intervention,,
+tar_severity,intervention,,
+p_rewire,intervention,,
+p_enrolled,intervention,,
+p_beh_change,intervention,,

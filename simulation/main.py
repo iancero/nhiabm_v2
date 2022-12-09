@@ -26,4 +26,4 @@ if __name__ == "__main__":
         # Write simulation history to output json file
         result_path = os.path.join(result_dir, result_file)
         with open(result_path, "w") as f:
-            json.dumps(sim.history)
+            f.write(json.dumps(sim.history))

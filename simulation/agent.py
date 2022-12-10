@@ -106,7 +106,7 @@ class Agent(object):
 
         return alters
 
-    def suicide_risk(self, odds_ratios, gen_sui_prev, ave_beh=0):
+    def suicide_risk(self, odds_ratios, gen_sui_prev, gen_ave_beh):
         assert len(odds_ratios) == len(self.beh)
 
         intercept = log(gen_sui_prev / (1 - gen_sui_prev))
@@ -116,7 +116,7 @@ class Agent(object):
         # Adjustment so that an agent with sum(beh) == ave_beh will also have
         # A suicide risk equal to gen_sui_prev. This allows from some agents to
         # be healthier than the average person from the general population.
-        log_odds_adjustment = mean(b) * ave_beh
+        log_odds_adjustment = mean(b) * gen_ave_beh
 
         p = 1 / (1 + exp(-(intercept + log_odds - log_odds_adjustment)))
 
@@ -124,9 +124,9 @@ class Agent(object):
 
         return p
 
-    def consider_suicide(self, odds_ratios, gen_sui_prev):
+    def consider_suicide(self, odds_ratios, gen_sui_prev, gen_ave_beh):
 
-        cur_risk = self.suicide_risk(odds_ratios, gen_sui_prev)
+        cur_risk = self.suicide_risk(odds_ratios, gen_sui_prev, gen_ave_beh)
         attempt_yn = int(random.random() < cur_risk)
 
         if attempt_yn:

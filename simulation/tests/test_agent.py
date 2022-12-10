@@ -243,31 +243,41 @@ class TestAgent:
         beh_odds_ratios = [2, 3, 4]
 
         a.beh = [0, 0, 0]
-        p = a.suicide_risk(odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev)
+        p = a.suicide_risk(
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
+        )
         assert round(p, 4) == round(gen_sui_prev, 4)
 
         a.beh = [1, 0, 0]
-        p = a.suicide_risk(odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev)
+        p = a.suicide_risk(
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
+        )
         a_odds = p / (1 - p)
         general_odds = gen_sui_prev / (1 - gen_sui_prev)
         a_odds_ratio = a_odds / general_odds
         assert round(a_odds_ratio, 8) == 2  # with beh_odds_ratios = [2, 3, 4]
 
         a.beh = [1, 0, 1]
-        p = a.suicide_risk(odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev)
+        p = a.suicide_risk(
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
+        )
         a_odds = p / (1 - p)
         general_odds = gen_sui_prev / (1 - gen_sui_prev)
         a_odds_ratio = a_odds / general_odds
         assert round(a_odds / general_odds, 10) == 8  # with beh_odds_ratios = [2, 3, 4]
 
-        # When accounting for ave_beh == 2
+        # When accounting for gen_ave_beh == 2
         a.beh = [1, 1, 0]
-        p = a.suicide_risk(odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, ave_beh=2)
+        p = a.suicide_risk(
+            odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, gen_ave_beh=2
+        )
         assert round(p, 4) == gen_sui_prev
 
-        # When accounting for ave_beh == 1
+        # When accounting for gen_ave_beh == 1
         a.beh = [1, 1, 1]
-        p = a.suicide_risk(odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, ave_beh=1)
+        p = a.suicide_risk(
+            odds_ratios=[2, 2, 2], gen_sui_prev=gen_sui_prev, gen_ave_beh=1
+        )
         a_odds = p / (1 - p)
         general_odds = gen_sui_prev / (1 - gen_sui_prev)
         a_odds_ratio = a_odds / general_odds
@@ -284,7 +294,7 @@ class TestAgent:
         # No beh risk factors implies low attempt prob
         a.beh = [0, 0, 0]
         outcome = a.consider_suicide(
-            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
         )
         assert outcome == 0
         assert a.attempts == 0
@@ -292,14 +302,14 @@ class TestAgent:
         # Attempts should happen when a has many beh risk factors
         a.beh = [1, 1, 1]
         outcome = a.consider_suicide(
-            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
         )
         assert outcome == 1
         assert a.attempts == 1
 
         # Test for increment of attempts
         outcome = a.consider_suicide(
-            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev
+            odds_ratios=beh_odds_ratios, gen_sui_prev=gen_sui_prev, gen_ave_beh=0
         )
         assert outcome == 1
         assert a.attempts == 2

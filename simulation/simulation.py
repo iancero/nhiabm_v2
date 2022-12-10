@@ -82,7 +82,9 @@ class Simulation:
 
             # (5) Consider whether to attempt suicide
             self.agents[i].consider_suicide(
-                odds_ratios=self.sui_ORs, gen_sui_prev=self.gen_sui_prev
+                odds_ratios=self.sui_ORs,
+                gen_sui_prev=self.gen_sui_prev,
+                gen_ave_beh=self.gen_ave_beh,
             )
 
         self.validate()

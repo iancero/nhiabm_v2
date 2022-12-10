@@ -86,6 +86,7 @@ class TestSimulation:
             "p_spon_change": 0.50,
             "sim_thresh": 0.50,
             "gen_sui_prev": 1 / 100,
+            "gen_ave_beh": 0,
             "intervention_params": [
                 {
                     "intv_class_name": "NetworkIntervention",
@@ -172,6 +173,7 @@ class TestSimulation:
             "p_spon_change": 0.50,
             "sim_thresh": 0.50,
             "gen_sui_prev": 1 / 100,
+            "gen_ave_beh": 0,
             "intervention_params": [
                 {
                     "intv_class_name": "NetworkIntervention",

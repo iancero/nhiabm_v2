@@ -82,7 +82,7 @@ class TestIntervention:
         }
 
         intv = Intervention(**intv_params)
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(4)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(4)]
 
         correct_enrollment = ["id_0", "id_1", "id_2", "id_3"]
 
@@ -153,7 +153,7 @@ class TestIntervention:
 
         intv = Intervention(**intv_params)
 
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(4)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(4)]
         intv.enrolled_names = ["id_1", "id_2"]
 
         enrolled = intv.enrolled_agents(agents)
@@ -177,7 +177,7 @@ class TestNetworkIntervention:
         intv = NetworkIntervention(**intv_params)
 
         # A lot of agents to ensure we can test enrollment statistically below
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(100)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(100)]
 
         world_params = {
             "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
@@ -200,7 +200,7 @@ class TestNetworkIntervention:
         # Agents
         agents = []
         for i, v in enumerate(network.vs):
-            agent = Agent(id=i, n_beh=32, max_alters=v.degree())
+            agent = Agent(id=i, n_beh=32, n_interactions=v.degree())
 
             # Vertex and agent must have same name
             v["name"] = agent.name
@@ -274,7 +274,7 @@ class TestIndividualIntervention:
 
         intv = IndividualIntervention(**intv_params)
 
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(4)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(4)]
 
         world_params = {
             "sui_ORs": [2, 2, 11, 3, 3],  # 1 really high risk and 4 small ones
@@ -331,7 +331,7 @@ class TestIndividualIntervention:
 
         intv = IndividualIntervention(**intv_params)
 
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(4)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(4)]
 
         world_params = {
             "sui_ORs": [2, 2, 11, 3, 3],  # 1 really high risk and 4 small ones
@@ -362,7 +362,7 @@ class TestIndividualIntervention:
 
         intv = IndividualIntervention(**intv_params)
 
-        agent = Agent(id=0, n_beh=5, max_alters=0)
+        agent = Agent(id=0, n_beh=5, n_interactions=0)
 
         intv.sui_ORs = [2, 12, 11, 3, 3]
 
@@ -380,7 +380,7 @@ class TestIndividualIntervention:
         # Agents
         agents = []
         for i, v in enumerate(network.vs):
-            agent = Agent(id=i, n_beh=5, max_alters=v.degree())
+            agent = Agent(id=i, n_beh=5, n_interactions=v.degree())
 
             # Vertex and agent must have same name
             v["name"] = agent.name
@@ -462,7 +462,7 @@ class TestMockIntervention:
         intv = MockIntervention(**intv_params)
 
         # A lot of agents to ensure we can test enrollment statistically below
-        agents = [Agent(id=i, n_beh=3, max_alters=0) for i in range(100)]
+        agents = [Agent(id=i, n_beh=3, n_interactions=0) for i in range(100)]
 
         world_params = {
             "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
@@ -485,7 +485,7 @@ class TestMockIntervention:
         # Agents
         agents = []
         for i, v in enumerate(network.vs):
-            agent = Agent(id=i, n_beh=32, max_alters=v.degree())
+            agent = Agent(id=i, n_beh=32, n_interactions=v.degree())
 
             # Vertex and agent must have same name
             v["name"] = agent.name

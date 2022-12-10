@@ -25,7 +25,7 @@ class Simulation:
         # Agents
         self.agents = []
         for i, v in enumerate(self.network.vs):
-            agent = Agent(id=i, n_beh=self.n_beh, max_alters=v.degree())
+            agent = Agent(id=i, n_beh=self.n_beh, n_interactions=self.n_interactions)
 
             # Vertex and agent must have same name
             v["name"] = agent.name

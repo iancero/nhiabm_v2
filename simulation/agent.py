@@ -5,13 +5,13 @@ from statistics import mean
 
 
 class Agent(object):
-    def __init__(self, id, n_beh, max_alters, baserates=None) -> None:
+    def __init__(self, id, n_beh, n_interactions, baserates=None) -> None:
         assert (baserates is None) or (len(baserates) == n_beh)
         assert (baserates is None) or all([(0 <= b) and (b <= 1) for b in baserates])
 
         self.id = id
         self.name = f"id_{id}"
-        self.max_alters = max_alters
+        self.n_interactions = n_interactions
         self.current_risk = None
         self.attempts = 0
 
@@ -27,7 +27,7 @@ class Agent(object):
         d = {
             "id": self.id,
             "name": self.name,
-            "max_alters": self.max_alters,
+            "n_interactions": self.n_interactions,
             "beh": self.beh,
             "atttempt_count": self.attempts,
         }
@@ -77,9 +77,8 @@ class Agent(object):
         pot_alters = [a for a in agents if a.network_index(network) not in neighborhood]
 
         for alter in pot_alters:
-            both_available = self.available(network) and alter.available(network)
             similar_enough = self.similarity(alter) >= sim_thresh
-            if both_available and similar_enough:
+            if similar_enough:
                 new_edge = (self.network_index(network), alter.network_index(network))
                 network.add_edges([new_edge])
 
@@ -96,12 +95,6 @@ class Agent(object):
                 network.delete_edges([bad_edge])
 
         return self
-
-    def available(self, network):
-        neighbor_indices = network.neighborhood(self.network_index(network))
-        has_open_slots = len(neighbor_indices) < self.max_alters
-
-        return has_open_slots
 
     def network_index(self, network):
         return network.vs["name"].index(self.name)
@@ -140,40 +133,3 @@ class Agent(object):
             self.attempts = self.attempts + 1
 
         return attempt_yn
-
-
-if __name__ == "__main__":
-
-    import igraph as ig
-
-    a = Agent(id=1, n_beh=3, max_alters=3)
-    a.beh = [0, 0, 0]
-
-    b = Agent(id=2, n_beh=3, max_alters=3)
-    b.beh = [1, 1, 1]
-
-    c = Agent(id=3, n_beh=3, max_alters=3)
-    c.beh = [2, 2, 2]  # normally impossible, but helps for testing
-
-    d = Agent(id=4, n_beh=3, max_alters=3)
-    d.beh = [-1, -1, -1]  # normally impossible, but helps for testing
-
-    agents = [a, b, c, d]
-    net = ig.Graph(edges=[(0, 1), (0, 2), (3, 4), (2, 4)])
-    net.vs["name"] = [f"id_{agent.id}" for agent in agents]
-
-    # should choose one person from b and c to perfectly emulate
-    a.n_interactions = 1
-    a.emulate_alters(agents, net, p=1)
-    assert (a.beh == [1, 1, 1]) or (a.beh == [2, 2, 2])
-
-    # should repeatedly emulate b and c until all original 0's are replaced
-    a.beh = [0, 0, 0]
-    a.n_interactions = 20
-    a.emulate_alters(agents, net, p=0.50)
-    assert all([b > 0 for b in a.beh])
-
-    # should attempt to emulate b, then c, with p = 0, so should not change
-    d.n_interactions = 5
-    d.emulate_alters(agents, net, p=0)
-    assert d.beh == [0, 0, 0]

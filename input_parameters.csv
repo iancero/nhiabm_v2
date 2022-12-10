@@ -1,18 +1,18 @@
-parameter_name,utilized_by,param_values,comment
-ticks,simulation,,
-n_interactions**,,,"needs to be added to allow for a high number of interactions, each with a low probability of emulation**"
-n_agents,simulation,"5, 10, 15, 30",
-p_edge,simulation,,
-n_beh,agent,"10, 30",
-baserates,agent,,
-p_spon_change,agent,,
-p_emul,agent,".10, .25, .50",
-sim_thresh,agent,".10, .25, .50, .75, .90",
-gen_sui_prev,agent,".0001, .001, .01",Calibrate these to be equal to weekly prevalences**
-sui_ORs,"agent, intervention","Uniform(1, 3)",
-start_tick,intervention,,
-duration,intervention,,
-tar_severity,intervention,,
-p_rewire,intervention,,
-p_enrolled,intervention,,
-p_beh_change,intervention,,
+parameter_name,utilized_by,param_values,comment,citation1,citation2,citation3
+ticks,simulation,,,,,
+n_interactions,agent,70,The approximate number of weekly social interactions observed in American adults,"Zhaoyang, R., Sliwinski, M. J., Martire, L. M., & Smyth, J. M. (2018). Age differences in adults’ daily social interactions: An ecological momentary assessment study. Psychology and aging, 33(4), 607.",,
+n_agents,simulation,"5, 10, 15, 30","Approximate size of networks for which current NHIs are designed. These range from immediate social support networks (n = 5), to Air Force training units (n = 5 to 15), to school classrooms (n = 30)","Wyman, P. A., Pisani, A. R., Brown, C. H., Yates, B., Morgan-DeVelder, L., Schmeelk-Cone, K., ... & Pflanz, S. E. (2020). Effect of the Wingman-Connect upstream suicide prevention program for air force personnel in training: A cluster randomized clinical trial. JAMA network open, 3(10), e2022532-e2022532.","King, C. A., Arango, A., Kramer, A., Busby, D., Czyz, E., Foster, C. E., ... & YST Study Team. (2019). Association of the youth-nominated support team intervention for suicidal adolescents with 11-to 14-year mortality outcomes: secondary analysis of a randomized clinical trial. JAMA psychiatry, 76(5), 492-498.","U.S. Department of Education, National Center for Education Statistics, Schools and Staffing Survey (SASS), ""Public School Teacher Data File,"" 2011–12."
+p_edge,simulation,".40, .60, .80",The approximate range of densities in Air Force training units (.44) and observed across US high school social networks (.40 - .80),"Pickering, T. A., Wyman, P. A., Schmeelk-Cone, K., Hartley, C., Valente, T. W., Pisani, A. R., ... & LoMurray, M. (2018). Diffusion of a peer-led suicide preventive intervention through school-based student peer and adult networks. Frontiers in psychiatry, 9, 598.","Wyman, P. A., Pisani, A. R., Brown, C. H., Yates, B., Morgan-DeVelder, L., Schmeelk-Cone, K., ... & Pflanz, S. E. (2020). Effect of the Wingman-Connect upstream suicide prevention program for air force personnel in training: A cluster randomized clinical trial. JAMA network open, 3(10), e2022532-e2022532.",
+n_beh,agent,"10, 30","Roughly 10 broad categories of risk factors have been identified for suicide. These choices allow for the modelling of 10 broad risk factors to emulate, or several sub-categories per broad category that can be individually emulated.","Franklin, J. C., Ribeiro, J. D., Fox, K. R., Bentley, K. H., Kleiman, E. M., Huang, X., ... & Nock, M. K. (2017). Risk factors for suicidal thoughts and behaviors: A meta-analysis of 50 years of research. Psychological bulletin, 143(2), 187.",,
+baserates,agent,"runif(0, .30)","Despite the fact that suicide is uncommon, most individual risk factors for it are common in the general population. Those with multiple simultaneous risk factors are expected to be at the greatest risk. We peg this range from 0 to .30, the upper bound of which is roughly the proportion of adolescents reporting persistent sadness and hopelessness in the last year","Johns, M. M., Lowry, R., Haderxhanaj, L. T., Rasberry, C. N., Robin, L., Scales, L., ... & Suarez, N. A. (2020). Trends in violence victimization and suicide risk by sexual identity among high school students—Youth Risk Behavior Survey, United States, 2015–2019. MMWR supplements, 69(1), 19.","Van Orden, K. A., Witte, T. K., Cukrowicz, K. C., Braithwaite, S. R., Selby, E. A., & Joiner Jr, T. E. (2010). The interpersonal theory of suicide. Psychological review, 117(2), 575.","Blumenthal, S. J., & Kupfer, D. J. (1986). Generalizable treatment strategies for suicidal behavior. Annals of the New York Academy of Sciences, 487(1), 327-340."
+p_spon_change,agent,,,,,
+p_emul,agent,".10, .25, .50",,,,
+sim_thresh,agent,".10, .25, .50, .75, .90",,,,
+gen_sui_prev,agent,".01, .05, .10",Values consistent with reported past year attempt rates for adolescents (~5-10%) and adults (). Each of these values is divided by 52 to convert it to a weekly attempt risk.,"Ivey-Stephenson, A. Z., Demissie, Z., Crosby, A. E., Stone, D. M., Gaylor, E., Wilkins, N., ... & Brown, M. (2020). Suicidal ideation and behaviors among high school students—youth risk behavior survey, United States, 2019. MMWR supplements, 69(1), 47.","Olfson, M., Blanco, C., Wall, M., Liu, S. M., Saha, T. D., Pickering, R. P., & Grant, B. F. (2017). National trends in suicide attempts among adults in the United States. JAMA psychiatry, 74(11), 1095-1103.",
+sui_ORs,"agent, intervention","Uniform(1, 3)","Meta-analytically, odds ratios for suicide attempts vary from about 1 to 3, with a mean of 2. This pattern is consistent across timescales from 6 months to 10 years","Franklin, J. C., Ribeiro, J. D., Fox, K. R., Bentley, K. H., Kleiman, E. M., Huang, X., ... & Nock, M. K. (2017). Risk factors for suicidal thoughts and behaviors: A meta-analysis of 50 years of research. Psychological bulletin, 143(2), 187.",,
+start_tick,intervention,,,,,
+duration,intervention,,,,,
+tar_severity,intervention,,,,,
+p_rewire,intervention,,,,,
+p_enrolled,intervention,,,,,
+p_beh_change,intervention,,,,,

@@ -59,22 +59,30 @@ class TestAgent:
         b.beh = [1, 1, 1]
 
         c = Agent(id=3, n_beh=3, max_alters=3)
-        c.beh = [0, 1, 0]
+        c.beh = [2, 2, 2]  # normally impossible, but helps for testing
 
         d = Agent(id=4, n_beh=3, max_alters=3)
-        d.beh = [0, 0, 0]
+        d.beh = [-1, -1, -1]  # normally impossible, but helps for testing
 
         agents = [a, b, c, d]
         net = ig.Graph(edges=[(0, 1), (0, 2), (3, 4), (2, 4)])
         net.vs["name"] = [f"id_{agent.id}" for agent in agents]
 
-        # should emulate b, then c, resulting in beh perfectly resembling c
+        # should choose one person from b and c to perfectly emulate
+        a.n_interactions = 1
         a.emulate_alters(agents, net, p=1)
-        assert a.beh == [0, 1, 0]
+        assert (a.beh == [1, 1, 1]) or (a.beh == [2, 2, 2])
+
+        # should repeatedly emulate b and c until all original 0's are replaced
+        a.beh = [0, 0, 0]
+        a.n_interactions = 20
+        a.emulate_alters(agents, net, p=0.50)
+        assert all([b > 0 for b in a.beh])
 
         # should attempt to emulate b, then c, with p = 0, so should not change
+        d.n_interactions = 5
         d.emulate_alters(agents, net, p=0)
-        assert d.beh == [0, 0, 0]
+        # assert d.beh == [0, 0, 0]
 
     def test_spontaneously_change(self):
         a = Agent(id=1, n_beh=3, max_alters=3)

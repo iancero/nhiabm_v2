@@ -5,39 +5,37 @@ from agent import Agent
 
 class TestAgent:
     def test_init(self):
-        a = Agent(id=1, n_beh=100, n_interactions=3, baserates=None)
+        a = Agent(id=1, n_beh=100, baserates=None)
         assert (0 < sum(a.beh)) and (sum(a.beh) < 100)
 
         assert isinstance(a, Agent)
         assert hasattr(a, "id")
         assert hasattr(a, "name")
         assert hasattr(a, "beh")
-        assert hasattr(a, "n_interactions")
         assert hasattr(a, "attempts")
 
         assert a.name == "id_1"
         assert a.attempts == 0
         assert isinstance(a.id, int)
         assert isinstance(a.beh, list)
-        assert isinstance(a.n_interactions, int)
 
-        b = Agent(id=2, n_beh=3, n_interactions=3, baserates=[0, 0, 0])
+        b = Agent(id=2, n_beh=3, baserates=[0, 0, 0])
         assert sum(b.beh) == 0
 
-        c = Agent(id=3, n_beh=3, n_interactions=3, baserates=[1, 1, 1])
+        c = Agent(id=3, n_beh=3, baserates=[1, 1, 1])
         assert sum(c.beh) == 3
 
-        d = Agent(id=4, n_beh=100, n_interactions=3, baserates=[0.25] * 100)
+        d = Agent(id=4, n_beh=100, baserates=[0.25] * 100)
         assert (0 < sum(d.beh)) and (sum(d.beh) < 50)
 
     def test_emulate(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3)
+        a = Agent(id=1, n_beh=3)
         a.beh = [0, 0, 0]
 
-        b = Agent(id=2, n_beh=3, n_interactions=3)
+        b = Agent(id=2, n_beh=3)
         b.beh = [1, 1, 1]
 
-        c = Agent(id=3, n_beh=3, n_interactions=3)
+        c = Agent(id=3, n_beh=3)
         c.beh = [0, 1, 0]
 
         assert a.beh == [0, 0, 0]
@@ -51,50 +49,17 @@ class TestAgent:
         a.emulate(c, p=1)
         assert a.beh == [0, 1, 0]
 
-    def test_emulate_alters_old(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3)
-        a.beh = [0, 0, 0]
-
-        b = Agent(id=2, n_beh=3, n_interactions=3)
-        b.beh = [1, 1, 1]
-
-        c = Agent(id=3, n_beh=3, n_interactions=3)
-        c.beh = [2, 2, 2]  # normally impossible, but helps for testing
-
-        d = Agent(id=4, n_beh=3, n_interactions=3)
-        d.beh = [-1, -1, -1]  # normally impossible, but helps for testing
-
-        agents = [a, b, c, d]
-        net = ig.Graph(edges=[(0, 1), (0, 2), (3, 4), (2, 4)])
-        net.vs["name"] = [f"id_{agent.id}" for agent in agents]
-
-        # should choose one person from b and c to perfectly emulate
-        a.n_interactions = 1
-        a.emulate_alters_old(agents, net, p=1)
-        assert (a.beh == [1, 1, 1]) or (a.beh == [2, 2, 2])
-
-        # should repeatedly emulate b and c until all original 0's are replaced
-        a.beh = [0, 0, 0]
-        a.n_interactions = 20
-        a.emulate_alters_old(agents, net, p=0.50)
-        assert all([b > 0 for b in a.beh])
-
-        # should attempt to emulate b, then c, with p = 0, so should not change
-        d.n_interactions = 5
-        d.emulate_alters_old(agents, net, p=0)
-        # assert d.beh == [0, 0, 0]
-
     def test_emulate_alters(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3)
+        a = Agent(id=1, n_beh=3)
         a.beh = [0, 0, 0]
 
-        b = Agent(id=2, n_beh=3, n_interactions=3)
+        b = Agent(id=2, n_beh=3)
         b.beh = [1, 1, 1]
 
-        c = Agent(id=3, n_beh=3, n_interactions=3)
+        c = Agent(id=3, n_beh=3)
         c.beh = [2, 2, 2]  # normally impossible, but helps for testing
 
-        d = Agent(id=4, n_beh=3, n_interactions=3)
+        d = Agent(id=4, n_beh=3)
         d.beh = [-1, -1, -1]  # normally impossible, but helps for testing
 
         agents = [a, b, c, d]
@@ -110,7 +75,7 @@ class TestAgent:
         assert all([b in [1, 2] for b in a.beh])
 
     def test_spontaneously_change(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3)
+        a = Agent(id=1, n_beh=3)
         a.beh = [0, 0, 0]
 
         baserates = [1, 1, 1]
@@ -130,9 +95,9 @@ class TestAgent:
         assert a.beh == [0, 1, 0]
 
     def test_network_index(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3)
-        b = Agent(id=2, n_beh=3, n_interactions=3)  # connected
-        c = Agent(id=3, n_beh=3, n_interactions=3)
+        a = Agent(id=1, n_beh=3)
+        b = Agent(id=2, n_beh=3)  # connected
+        c = Agent(id=3, n_beh=3)
         agents = [a, b, c]
 
         net = ig.Graph(edges=[(0, 1), (0, 2), (1, 3), (1, 4)])
@@ -157,11 +122,11 @@ class TestAgent:
 
         # Intentionally complicated ids to ensure alters can be retrieved,
         # even when agent ids don't directly corrospond to network.vs indices
-        a = Agent(id=1010, n_beh=3, n_interactions=3)
-        b = Agent(id=232, n_beh=3, n_interactions=3)  # connected
-        c = Agent(id=35432, n_beh=3, n_interactions=3)  # connected
-        d = Agent(id=44124, n_beh=3, n_interactions=3)  # not connected
-        e = Agent(id=44, n_beh=3, n_interactions=3)  # not connected
+        a = Agent(id=1010, n_beh=3)
+        b = Agent(id=232, n_beh=3)  # connected
+        c = Agent(id=35432, n_beh=3)  # connected
+        d = Agent(id=44124, n_beh=3)  # not connected
+        e = Agent(id=44, n_beh=3)  # not connected
         agents = [a, b, c, d, e]
 
         net = ig.Graph(edges=[(0, 1), (0, 2), (1, 3), (1, 4), (4, 5)])
@@ -195,15 +160,15 @@ class TestAgent:
     def test_recruit_alters(self):
         # Intentionally odd IDs, to ensure method works when orderly IDs cant
         # be relied on
-        a = Agent(id=33, n_beh=3, n_interactions=3)
+        a = Agent(id=33, n_beh=3)
         a.beh = [1, 1, 1]
 
         # 66% similar (should recruit when thresh = .50)
-        b = Agent(id=101, n_beh=3, n_interactions=3)
+        b = Agent(id=101, n_beh=3)
         b.beh = [1, 1, 0]
 
         # only 33% similar (should not recruit, whem thresh = .50)
-        c = Agent(id=123, n_beh=3, n_interactions=3)
+        c = Agent(id=123, n_beh=3)
         c.beh = [1, 0, 0]
 
         agents = [a, b, c]
@@ -230,15 +195,15 @@ class TestAgent:
     def test_prune_alters(self):
         # Intentionally odd IDs, to ensure method works when orderly IDs cant
         # be relied on
-        a = Agent(id=33, n_beh=3, n_interactions=3)
+        a = Agent(id=33, n_beh=3)
         a.beh = [1, 1, 1]
 
         # 66% similar (should NOT prune when thresh = .50)
-        b = Agent(id=101, n_beh=3, n_interactions=3)
+        b = Agent(id=101, n_beh=3)
         b.beh = [1, 1, 0]
 
         # only 33% similar (should prune, whem thresh = .50)
-        c = Agent(id=123, n_beh=3, n_interactions=3)
+        c = Agent(id=123, n_beh=3)
         c.beh = [1, 0, 0]
 
         agents = [a, b, c]
@@ -262,7 +227,7 @@ class TestAgent:
 
     def test_suicide_risk(self):
 
-        a = Agent(id=1, n_beh=3, n_interactions=3, baserates=None)
+        a = Agent(id=1, n_beh=3, baserates=None)
 
         gen_sui_prev = 1 / 100
         beh_odds_ratios = [2, 3, 4]
@@ -309,7 +274,7 @@ class TestAgent:
         assert round(a_odds_ratio, 8) == 4
 
     def test_consider_suicide(self):
-        a = Agent(id=1, n_beh=3, n_interactions=3, baserates=None)
+        a = Agent(id=1, n_beh=3, baserates=None)
 
         assert a.attempts == 0
 

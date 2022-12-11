@@ -5,13 +5,12 @@ from statistics import mean
 
 
 class Agent(object):
-    def __init__(self, id, n_beh, n_interactions, baserates=None) -> None:
+    def __init__(self, id, n_beh, baserates=None) -> None:
         assert (baserates is None) or (len(baserates) == n_beh)
         assert (baserates is None) or all([(0 <= b) and (b <= 1) for b in baserates])
 
         self.id = id
         self.name = f"id_{id}"
-        self.n_interactions = n_interactions
         self.current_risk = None
         self.attempts = 0
 
@@ -27,7 +26,6 @@ class Agent(object):
         d = {
             "id": self.id,
             "name": self.name,
-            "n_interactions": self.n_interactions,
             "beh": self.beh,
             "attempt_count": self.attempts,
         }
@@ -38,17 +36,6 @@ class Agent(object):
         for i, alter_beh in enumerate(alter.beh):
             if random.random() < p:
                 self.beh[i] = alter_beh
-
-    def emulate_alters_old(self, agents, network, p):
-        alters = self.alters(agents, network)
-
-        if any(alters):
-
-            # when n_interactions > len(alters) this intentionally creates repeats
-            alter_interactions = random.choices(alters, k=self.n_interactions)
-
-            for alter in alter_interactions:
-                self.emulate(alter, p)
 
     def emulate_alters(self, agents, network, p):
         alters = self.alters(agents, network)

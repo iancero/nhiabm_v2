@@ -29,7 +29,7 @@ class Agent(object):
             "name": self.name,
             "n_interactions": self.n_interactions,
             "beh": self.beh,
-            "atttempt_count": self.attempts,
+            "attempt_count": self.attempts,
         }
 
         return d

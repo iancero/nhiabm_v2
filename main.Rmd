@@ -1,0 +1,96 @@
+---
+title: "R Notebook"
+output:
+  html_notebook: default
+---
+
+```{r}
+library(reticulate)
+
+
+
+
+
+use_virtualenv('renv/python/virtualenvs/renv-python-3.10', required = T)
+# py_install('igraph')
+```
+
+```{r}
+gen_prev <- 1/10
+gen_odds <- log(gen_prev/(1 - gen_prev))
+risk_factors <- log(2*(1:4))
+
+n_beh <- 30
+gen_beh <- 10
+beh <- 10
+
+p <- 1 / (1 + exp(-(gen_odds - log(2*gen_beh)  + log(2*beh))))
+
+p
+```
+
+
+
+```{r}
+py_install('igraph')
+```
+```{r}
+annual_attempt_prevalences <- seq(.50, 11.00, by = 2)
+
+
+```
+
+
+```{r}
+params = jsonlite::fromJSON('{
+            "ticks": 10,
+            "n_agents": 10,
+            "n_beh": 3,
+            "baserates": [0.50, 0.50, 0.50],
+            "sui_ORs": [2, 3, 4],
+            "p_edge": 0.50,
+            "p_spon_change": 0.50,
+            "sim_thresh": 0.50,
+            "intervention_params": [
+                {
+                    "intv_class_name": "NetworkIntervention",
+                    "start_tick": 10,
+                    "duration": 1,
+                    "tar_severity": [0.40, 1],
+                    "p_rewire": 0.25,
+                    "p_enrolled": 0.50,
+                    "p_beh_change": 0.50
+                },
+                {
+                    "intv_class_name": "IndividualIntervention",
+                    "start_tick": 10,
+                    "duration": 1,
+                    "tar_severity": [0.40, 1],
+                    "p_rewire": 0.25,
+                    "p_enrolled": 0.50,
+                    "p_beh_change": 0.50
+                }
+            ]
+        }')
+
+params
+
+
+library(tidyverse)
+
+
+expand_grid(
+  n_agents = seq(5, 35, by = 5),
+  beh = 1:30,
+  
+)
+```
+
+```{python}
+from simulation.simulation import Simulation
+
+sim = Simulation(**params)
+
+print(sim)
+```
+

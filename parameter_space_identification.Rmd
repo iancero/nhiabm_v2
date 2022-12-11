@@ -1,0 +1,120 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+
+df <- read_csv('input_parameters.csv')
+
+
+
+
+n_beh <- df %>% 
+  filter(parameter_name == 'n_beh') %>% 
+  pull(param_values) %>% 
+  as.numeric()
+
+
+param_values <- df$param_values %>% 
+  set_names(df$parameter_name) %>% 
+  map_if(
+      .p = ~ str_starts(.x, '\\d+|\\.'),
+      .f = ~ .x %>% 
+        str_split(', ') %>% 
+        unlist() %>% 
+        as.numeric(),
+      .else = ~ .x)
+
+
+x <- expand.grid(param_values, stringsAsFactors = F) %>% 
+  slice(1:4) %>% 
+  mutate(across(where(is.character), .fns = ~ map(.x, eval(parse(text = .x)))))
+
+
+
+5 * 15000000/60/60
+```
+
+
+
+
+```{r}
+annual_p <- .10
+weekly_p <- annual_p/52
+
+mean(rbinom(n = 10000000, size = 52, prob = weekly_p))
+
+```
+```{r}
+set.seed(1234213)
+
+cur_params <- param_values %>% 
+  map(~.x[[length(.x)]]) %>% 
+  map_if(
+    .p = ~ is.character(.x),
+    .f = ~ eval(parse(text = .x))) %>% 
+  map_if(
+    pis.list)
+
+
+jsonlite::toJSON(cur_params, auto_unbox = T)
+
+
+```
+
+
+In what follows we identify the key parameters and values they will take on.
+
+{
+    "ticks": 1000,
+    "n_agents": 10,
+    "n_beh": 3,
+    "baserates": [
+        0.5,
+        0.5,
+        0.5
+    ],
+    "sui_ORs": [
+        2,
+        3,
+        4
+    ],
+    "p_edge": 0.5,
+    "p_spon_change": 0.5,
+    "p_emul": 0.5,
+    "sim_thresh": 0.5,
+    "gen_sui_prev": 0.10,
+    "intervention_params": [
+        {
+            "intv_class_name": "MockIntervention",
+            "start_tick": 10,
+            "duration": 1,
+            "tar_severity": [
+                0.4,
+                1
+            ],
+            "p_rewire": 0.25,
+            "p_enrolled": 0.5,
+            "p_beh_change": 0.5
+        },
+        {
+            "intv_class_name": "MockIntervention",
+            "start_tick": 25,
+            "duration": 10,
+            "tar_severity": [
+                0.4,
+                1
+            ],
+            "p_rewire": 0.25,
+            "p_enrolled": 0.5,
+            "p_beh_change": 0.5
+        }
+    ]
+}
+
+## World Params
+
+- *ticks*: the number of time steps the simulation will run.

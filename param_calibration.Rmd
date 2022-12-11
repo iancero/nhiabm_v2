@@ -1,0 +1,142 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(reticulate)
+library(tidyverse)
+
+use_virtualenv('renv/python/virtualenvs/renv-python-3.10', required = T)
+```
+
+
+```{r}
+results_path <- 'simulation/experiments/practice_exp_1/results/results_sim_param_1.json'
+
+results <- jsonlite::read_json(results_path)
+
+
+agent_as_df <- function(list_agent){
+  list_agent %>% 
+    unlist() %>% 
+    t() %>% 
+    as.data.frame()
+}
+
+agents_as_df <- function(agent_list){
+  agent_list %>%
+  map(agent_as_df) %>% 
+  bind_rows() %>% 
+  mutate(across(
+    .cols = c(starts_with('beh'), attempt_count),
+    .fns = as.numeric))
+}
+
+agent_df <- function(simulation_results){
+  simulation_results %>% 
+    map(getElement, name = 'agents') %>% 
+    map(agents_as_df) %>% 
+    bind_rows(.id = 'tick')
+}
+
+library(igraph)
+
+
+
+
+
+
+network <- function(result_list){
+  agents <- result_list$agents %>% 
+    agents_as_df()
+  
+  edges <- result_list$edges %>% 
+    bind_rows() %>% 
+    select(src_name, tar_name)
+
+  verts <- result_list$vertices %>% 
+    bind_rows() %>% 
+    select(name) %>% 
+    left_join(agents, by = 'name')
+
+  graph_from_data_frame(
+    d = edges,
+    directed = F,
+    vertices = verts)
+}
+
+
+
+
+
+network_df <- data.frame(tick = seq_along(results)) %>%
+  mutate(network = map(results, network))
+```
+
+## Is network density stable over time?
+
+TODO: check for trend
+
+Yes, in the absence of intervention, a Mann-Kendall test suggests there is not a monotonic trend in network density - either by t = 500 or by the end of the run at t = 1,000.
+
+```{r}
+network_df <- network_df %>% 
+  mutate(
+    density = map_dbl(network, edge_density))
+
+Kendall::MannKendall(ts(network_df$density[1:500]))
+
+Kendall::MannKendall(ts(network_df$density[1:1000]))
+
+ggplot(network_df, aes(tick, density)) +
+  geom_line()
+```
+
+## Is network assortativity stable over time?
+
+```{r}
+network_df2 <- network_df %>% 
+  mutate(
+    assort = map_dbl(network, ~ assortativity(.x, V(.x)$attempt_count)),
+    assort = if_else(is.nan(assort), NA_real_, assort))
+
+mean(network_df2$assort, na.rm = T)
+
+
+
+ggplot(network_df2, aes(tick, assort)) +
+  geom_line() +
+  geom_hline(yintercept = 0)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

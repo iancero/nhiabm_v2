@@ -35,13 +35,11 @@ class Agent(object):
         return d
 
     def emulate(self, alter, p):
-        assert len(self.beh) == len(alter.beh)
-
         for i, alter_beh in enumerate(alter.beh):
             if random.random() < p:
                 self.beh[i] = alter_beh
 
-    def emulate_alters(self, agents, network, p):
+    def emulate_alters_old(self, agents, network, p):
         alters = self.alters(agents, network)
 
         if any(alters):
@@ -52,13 +50,20 @@ class Agent(object):
             for alter in alter_interactions:
                 self.emulate(alter, p)
 
-    def spontaneously_change(self, baserates, susceptibility):
-        assert len(baserates) == len(self.beh)
-        assert (0 <= susceptibility) and (susceptibility <= 1)
+    def emulate_alters(self, agents, network, p):
+        alters = self.alters(agents, network)
+
+        if not any(alters):
+            return None
 
         for i, beh in enumerate(self.beh):
-            beh_is_susceptible = random.random() < susceptibility
-            if beh_is_susceptible:
+            if random.random() < p:
+                alter = random.choice(alters)
+                self.beh[i] = alter.beh[i]
+
+    def spontaneously_change(self, baserates, susceptibility):
+        for i, beh in enumerate(self.beh):
+            if random.random() < susceptibility:
                 self.beh[i] = int(random.random() < baserates[i])
 
         return self
@@ -66,12 +71,9 @@ class Agent(object):
     def similarity(self, alter):
         sim = mean([self.beh[i] == alter.beh[i] for i, b in enumerate(self.beh)])
 
-        assert (0 <= sim) and (sim <= 1)
-
         return sim
 
     def recruit_alters(self, agents, network, sim_thresh=0.50):
-        assert (0 <= sim_thresh) and (sim_thresh <= 1)
 
         neighborhood = network.neighborhood(self.network_index(network))
         pot_alters = [a for a in agents if a.network_index(network) not in neighborhood]
@@ -85,7 +87,6 @@ class Agent(object):
         return self
 
     def prune_alters(self, agents, network, sim_thresh=0.50):
-        assert (0 <= sim_thresh) and (sim_thresh <= 1)
 
         alters = self.alters(agents, network)
 
@@ -107,7 +108,6 @@ class Agent(object):
         return alters
 
     def suicide_risk(self, odds_ratios, gen_sui_prev, gen_ave_beh):
-        assert len(odds_ratios) == len(self.beh)
 
         intercept = log(gen_sui_prev / (1 - gen_sui_prev))
         b = [log(odds_ratio) for odds_ratio in odds_ratios]

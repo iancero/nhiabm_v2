@@ -39,5 +39,5 @@ if __name__ == "__main__":
         param_dict=params, runs_per_combo=1, nonvarying_names=["baserates", "sui_ORs"]
     )
 
-    with open("input_parameter_combinations.json", "w") as f:
+    with open("experiments/input_parameter_combinations.json", "w") as f:
         f.write(json.dumps(param_combos))

@@ -196,31 +196,26 @@ network_df4 %>%
     ave_mid = mean(baseline_mid_beh)) %>% 
   mutate(across(is.numeric, .fns = ~ round(.x, 2)))
 ```
+
+
+
 Predictions
 
 - Overall suicide attempt rates
     - Both IND and NHI will produce fewer suicide attempts and lower average risk rate than CTRL
-    - IND will yield fewer suicide attempts and lower average risk rate than the NHI while, the intervention is active
-    - NHI will yield fewer suicide attempts and lower average risk rate in the simulation year in the 50 ticks following the intervention conclusion
+    - IND will yield fewer suicide attempts and lower average risk rate than the NHI while, the it (IND) is active
+    - NHI will yield fewer suicide attempts and lower average risk rate in the simulation year following the intervention conclusion, compared to both IND and CTRL
     - Both interventions will be practically equivalent (e.g., within 10%) to the CTRL's attempt rate by the final 100 ticks
-    
-- Mechanisms
-    - Tie density
-        - Both IND and NHI will produce an increase in network density over CTRL for one year following intervention
-        - NHI will produce a greater increase in network density than IND
-    - Tie durability
-        - The new ties produced by NHI rewiring will have a faster pruning rate than the average tie in the control condition
-        - The implausible connection rate (i.e., people who could not have been friends at baseline) will be higher in NHI than IND and CTRL, immediately after the intervention and lasting at least one year
-    - People at elevated risk
-        - In both interventions, the greatest reduction in suicide risk will occur in the most severe third of the population
-        - NHIs will reduce the rate of isolation and low friendships (i.e., degree <= 2) to a greater degree than IND
 
 - Moderators
-    - Higher rewiring rates will increase the effectiveness of NHI over IND and CTRL
-    - Higher emulation rates will increase the effectiveness of NHIs over IND and CTRL
-    - The benefits of NHIs will be comparable (e.g., within 25% of their median) at all network sizes
-    - Higher spontaneous change rates will reduce the effetiveness of both NHIs and IND
-    
+    - Individual Level: Baseline isolate status will moderate an NHI effect, such that the effects of the NHI will be greater. Including:
+        - Greater new ties will be directed toward baseline isolates
+        - Greater risk reduction
+    - Group Level: Networks with greater dysfunction will experience greater benefit from an NHI
+        
+Exploratory
+    - How much benefit does the NHI receive from preferential rewiring toward isolates? We predict more targeting means more suicide reduction
+    - What kind of benefit will be produced for non-enrolled people?
 
 
 
@@ -247,19 +242,6 @@ network_df %>%
     mid_risk = sum(beh4 + beh5 + beh6),
     all_risk = sum(beh_prop*10))
 ```
-
-
-
-
-
-
-
-
-
-```{r}
-.01/5*1
-```
-
 
 
 ```{r}

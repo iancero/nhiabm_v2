@@ -6,6 +6,7 @@ output: html_notebook
 ```{r}
 library(reticulate)
 library(tidyverse)
+library(igraph)
 
 use_virtualenv('renv/python/virtualenvs/renv-python-3.10', required = T)
 ```
@@ -29,8 +30,13 @@ agents_as_df <- function(agent_list){
   map(agent_as_df) %>% 
   bind_rows() %>% 
   mutate(across(
-    .cols = c(starts_with('beh'), attempt_count),
-    .fns = as.numeric))
+    .cols = c(starts_with('beh'), cur_risk, attempt_count),
+    .fns = as.numeric)) %>%
+  rowwise() %>% 
+  mutate(
+    beh_prop = mean(c_across(starts_with('beh'))),
+    color = paste0('grey', 100 - round(100*beh_prop)) # will break with n_beh not divisible by 10
+    )
 }
 
 agent_df <- function(simulation_results){
@@ -39,12 +45,6 @@ agent_df <- function(simulation_results){
     map(agents_as_df) %>% 
     bind_rows(.id = 'tick')
 }
-
-library(igraph)
-
-
-
-
 
 
 network <- function(result_list){
@@ -67,12 +67,48 @@ network <- function(result_list){
 }
 
 
-
-
+results[[1]]$agents[[1]]
 
 network_df <- data.frame(tick = seq_along(results)) %>%
   mutate(network = map(results, network))
 ```
+
+
+# Key criteria
+
+- Density should be stable over time, with most values between .40 and .80
+- Mean beh should be stable over time, centered *near* the average baserate
+- beh_prop should be moderately assortative, fluctuating around a stable value (ideally demonstrating good mixing not near 1)
+- Attempt proportion should approximate 10-20% by the end of 1000 runs
+- Isolates are not required, but should be frequently occuring so that we can assess treatment effects for them
+
+
+```{r}
+g <- network_df$network[[1]]
+
+plot(g)
+```
+
+```{r}
+g <- network_df$network[[250]]
+
+plot(g)
+```
+
+
+
+```{r}
+g <- network_df$network[[500]]
+
+plot(g)
+```
+
+```{r}
+hist(V(g)$beh_prop)
+hist(V(g)$cur_risk)
+```
+
+
 
 ## Is network density stable over time?
 
@@ -85,9 +121,9 @@ network_df <- network_df %>%
   mutate(
     density = map_dbl(network, edge_density))
 
-Kendall::MannKendall(ts(network_df$density[1:500]))
+Kendall::MannKendall(ts(network_df$density[1:250]))
 
-Kendall::MannKendall(ts(network_df$density[1:1000]))
+Kendall::MannKendall(ts(network_df$density[1:500]))
 
 ggplot(network_df, aes(tick, density)) +
   geom_line()
@@ -98,16 +134,118 @@ ggplot(network_df, aes(tick, density)) +
 ```{r}
 network_df2 <- network_df %>% 
   mutate(
-    assort = map_dbl(network, ~ assortativity(.x, V(.x)$attempt_count)),
-    assort = if_else(is.nan(assort), NA_real_, assort))
+    assort = map_dbl(network, ~ assortativity(.x, V(.x)$beh_prop)),
+    assort = if_else(is.nan(assort), 1, assort))
 
 mean(network_df2$assort, na.rm = T)
 
 
 
+
+
 ggplot(network_df2, aes(tick, assort)) +
   geom_line() +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0) +
+  geom_hline(
+    yintercept = mean(network_df2$assort, na.rm = T), 
+    color = 'blue', 
+    linetype = 2)
+```
+
+
+
+```{r}
+network_df3 <- network_df %>% 
+  mutate(
+    mean_beh_prop = map_dbl(network, ~ mean(V(.x)$beh_prop)),
+    mean_sui_prop = map_dbl(network, ~ mean((V(.x)$attempt_count > 0)))
+    )
+
+
+
+ggplot(network_df3, aes(tick, mean_beh_prop)) +
+  geom_line() 
+
+ggplot(network_df3, aes(tick, mean_sui_prop)) +
+  geom_line() 
+```
+
+
+
+
+```{r}
+network_df4 <- network_df %>%
+  # slice(1:100) %>% 
+  mutate(agents = map(network, ~ as_data_frame(.x, what = 'vertices'))) %>% 
+  select(tick, agents) %>% 
+  unnest(agents) %>% 
+  filter(tick > 500) %>%
+  group_by(name) %>% 
+  summarise(
+    baseline_beh = beh_prop[1],
+    baseline_high_beh = (beh8[1] + beh9[1] + beh10[1])/3,
+    baseline_mid_beh = (beh8[4] + beh9[5] + beh10[6])/3,
+    attempts = max(attempt_count)) %>% 
+  arrange(attempts, name)
+  
+network_df4 %>% 
+  group_by(attempts) %>% 
+  mutate(
+    ave_beh = mean(baseline_beh),
+    ave_high = mean(baseline_high_beh),
+    ave_mid = mean(baseline_mid_beh)) %>% 
+  mutate(across(is.numeric, .fns = ~ round(.x, 2)))
+```
+Predictions
+
+- Overall suicide attempt rates
+    - Both IND and NHI will produce fewer suicide attempts and lower average risk rate than CTRL
+    - IND will yield fewer suicide attempts and lower average risk rate than the NHI while, the intervention is active
+    - NHI will yield fewer suicide attempts and lower average risk rate in the simulation year in the 50 ticks following the intervention conclusion
+    - Both interventions will be practically equivalent (e.g., within 10%) to the CTRL's attempt rate by the final 100 ticks
+    
+- Mechanisms
+    - Tie density
+        - Both IND and NHI will produce an increase in network density over CTRL for one year following intervention
+        - NHI will produce a greater increase in network density than IND
+    - Tie durability
+        - The new ties produced by NHI rewiring will have a faster pruning rate than the average tie in the control condition
+        - The implausible connection rate (i.e., people who could not have been friends at baseline) will be higher in NHI than IND and CTRL, immediately after the intervention and lasting at least one year
+    - People at elevated risk
+        - In both interventions, the greatest reduction in suicide risk will occur in the most severe third of the population
+        - NHIs will reduce the rate of isolation and low friendships (i.e., degree <= 2) to a greater degree than IND
+
+- Moderators
+    - Higher rewiring rates will increase the effectiveness of NHI over IND and CTRL
+    - Higher emulation rates will increase the effectiveness of NHIs over IND and CTRL
+    - The benefits of NHIs will be comparable (e.g., within 25% of their median) at all network sizes
+    - Higher spontaneous change rates will reduce the effetiveness of both NHIs and IND
+    
+
+
+
+
+
+
+# Dosage standardization
+
+```{r}
+
+
+network_df %>%
+  # slice(1:100) %>% 
+  mutate(agents = map(network, ~ as_data_frame(.x, what = 'vertices'))) %>% 
+  select(tick, agents) %>% 
+  unnest(agents) %>% 
+  filter(tick > 500) %>% 
+  group_by(tick) %>% 
+  mutate(
+    risk_rank = rank(beh_prop),
+    high_risk = risk_rank < .35*max(risk_rank)) %>% 
+  group_by(tick, high_risk) %>% 
+  summarise(
+    mid_risk = sum(beh4 + beh5 + beh6),
+    all_risk = sum(beh_prop*10))
 ```
 
 
@@ -118,24 +256,16 @@ ggplot(network_df2, aes(tick, assort)) +
 
 
 
+```{r}
+.01/5*1
+```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+paste(round(seq(1.25, 3, length.out = 10), 2), collapse = ', ')
+mean(seq(1.25, 3, length.out = 10))
+```
 
 
 

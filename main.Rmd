@@ -7,7 +7,7 @@ library(reticulate)
 
 
 
-
+# a changes
 
 use_virtualenv('renv/python/virtualenvs/renv-python-3.10', required = T)
 # py_install('igraph')

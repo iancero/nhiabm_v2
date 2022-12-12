@@ -1,4 +1,3 @@
-import itertools
 from math import exp, log
 import random
 from statistics import mean
@@ -11,7 +10,7 @@ class Agent(object):
 
         self.id = id
         self.name = f"id_{id}"
-        self.current_risk = None
+        self.current_risk = 0
         self.attempts = 0
 
         if baserates is not None:
@@ -27,6 +26,7 @@ class Agent(object):
             "id": self.id,
             "name": self.name,
             "beh": self.beh,
+            "cur_risk": self.current_risk,
             "attempt_count": self.attempts,
         }
 

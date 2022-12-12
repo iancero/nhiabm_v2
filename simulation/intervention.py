@@ -20,6 +20,7 @@ class Intervention:
         self.p_rewire = p_rewire
         self.p_enrolled = p_enrolled
         self.p_beh_change = p_beh_change
+        self.beh_changed = 0
 
     def is_setup_phase(self, t):
         return t == self.start_tick
@@ -59,6 +60,7 @@ class Intervention:
             "start_tick": self.start_tick,
             "duration": self.duration,
             "last_tick": self.last_tick,
+            "beh_changed": self.beh_changed,
         }
 
         return d
@@ -80,6 +82,12 @@ class NetworkIntervention(Intervention):
         for agent in agents:
             for i in self.tar_beh:
                 if random.random() < self.p_beh_change:
+
+                    # if this behavior was actually bad to start,
+                    # document the improvement
+                    self.beh_changed += int(agent.beh[i] == 1)
+
+                    # change behavior for the better
                     agent.beh[i] = 0
 
 
@@ -134,6 +142,12 @@ class IndividualIntervention(Intervention):
 
             for i in treatable_beh:
                 if random.random() < self.p_beh_change:
+
+                    # if this behavior was actually bad to start,
+                    # document the improvement
+                    self.beh_changed += int(enrollee.beh[i] == 1)
+
+                    # change the behavior to the better
                     enrollee.beh[i] = 0
 
 
@@ -157,6 +171,12 @@ class MockIntervention(Intervention):
                 random.shuffle(rep_beh)
 
                 for rep_i, beh_i in enumerate(self.tar_beh):
+                    # if this behavior was actually bad to start,
+                    # document the improvement
+                    self.beh_changed += int(
+                        (agent.beh[beh_i] == 1) & (rep_beh[rep_i] == 0)
+                    )
+
                     agent.beh[beh_i] = rep_beh[rep_i]
 
         # There is a random chance edges will simply be deleted

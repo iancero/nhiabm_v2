@@ -201,22 +201,20 @@ network_df4 %>%
 
 Predictions
 
-- Overall suicide attempt rates
-    - Both IND and NHI will produce fewer suicide attempts and lower average risk rate than CTRL
-    - IND will yield fewer suicide attempts and lower average risk rate than the NHI while, the it (IND) is active
-    - NHI will yield fewer suicide attempts and lower average risk rate in the simulation year following the intervention conclusion, compared to both IND and CTRL
-    - Both interventions will be practically equivalent (e.g., within 10%) to the CTRL's attempt rate by the final 100 ticks
+This study compares simulated versions of network health interventions (NHIs) for suicide to traditional individual-focused interventions (INDs). The simulations are designed so that each simulated social network runs for one-half of its total run time to establish a baseline for that network, after which an NHI or IND is introduced briefly (i.e., 1 to 10 simulation-weeks/ticks) and results are then tracked for the second half of the simulation time. We make several predictions about the performance of NHIs in our simulations, which are organized into sections below. 
 
-- Moderators
-    - Individual Level: Baseline isolate status will moderate an NHI effect, such that the effects of the NHI will be greater. Including:
-        - Greater new ties will be directed toward baseline isolates
-        - Greater risk reduction
-    - Group Level: Networks with greater dysfunction will experience greater benefit from an NHI
-        
-Exploratory
-    - How much benefit does the NHI receive from preferential rewiring toward isolates? We predict more targeting means more suicide reduction
-    - What kind of benefit will be produced for non-enrolled people?
+1. Group-level suicide prevention effectiveness:
+    a. Both IND- and NHI- treated groups will produce reductions in (i) average suicide risk level and (ii) reductions in the rate of observed suicide attempts, compared to baseline.
+    b. During active intervention time, IND-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than NHI-treated groups.
+    c. However, in the simulation-year after intervention has concluded, NHI-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than IND-treated groups.
+    d. Both IND-treated groups and NHI-treated groups will revert to within 10% of baseline (i) average suicide risk levels and (ii) suicide attempt rates by two simulation-years after their conclusion.
 
+2. NHI-effectiveness moderators:
+    a. Agents with fewer ties at baseline (including isolates) will demonstrate greater improvement after NHI treatment, as measured by the increase in their total degree and decrease in their suicide risk (compared to their baseline scores).
+    b. Groups with higher average suicide risk scores at baseline, will demonstrate greater improvements after NHI treatmeant, as measured by increased edge density and decreased average suicide risk.
+
+3. Exploratory:
+    a. Among agents not enrolled in an intervention, NHIs will produce greater benefits than INDs, as measured by suicide attempt risk and post-intervention suicide attempts.
 
 
 

@@ -91,4 +91,24 @@ sim = Simulation(**params)
 
 print(sim)
 ```
+```{r}
+seq(.30, .10, length.out = 10) %>% 
+  round(2) %>% 
+  paste(collapse = ', ')
+```
+
+
+```{r}
+y <- length(list.files('simulation/experiments/mock_experiment'))
+
+y
+```
+
+
+```{r}
+x <- jsonlite::read_json('simulation/experiments/mock_experiment/input_parameter_combinations.json')
+
+length(x)
+```
+
 

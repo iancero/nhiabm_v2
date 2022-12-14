@@ -1,41 +1,37 @@
+import copy
 from itertools import product, repeat
 import json
+import random
 
 
-def parameter_combinations(param_dict, runs_per_combo, nonvarying_names=None):
+def param_combinations(param_dict, runs_per_combo, number_iterations=False):
 
-    if nonvarying_names is not None:
-        # hold things that should stay lists to the side
-        nonvarying_lists = {key: param_dict.pop(key) for key in nonvarying_names}
+    # (1) create intervention combinations first
+    if "intervention_params" in param_dict:
+        intervention_params = []
+        for intv in param_dict["intervention_params"]:
+            intv_combos = param_combinations(intv, runs_per_combo=1)
+            intervention_params.extend([[intv_combo] for intv_combo in intv_combos])
 
+        param_dict.update({"intervention_params": intervention_params})
+
+    # (2) construct all combinations of parameters in param_dict
     param_combos = []
     for param_combo in product(*param_dict.values()):
+
         param_combo = dict(zip(param_dict, param_combo))
 
-        # re-insert nonvarying hold out lists from above
-        if nonvarying_names:
-            param_combo.update(nonvarying_lists)
+        # repeat for as many samples as desired
+        param_iterations = []
+        for i, combo in enumerate(repeat(param_combo, times=runs_per_combo)):
+            param_iteration = copy.deepcopy(combo)
 
-        # repeat for as many samples as desires
-        param_iterations = list(repeat(param_combo, times=runs_per_combo))
+            if number_iterations:
+                param_iteration.update({"sample_num": i})
 
-        param_combos.append(param_iterations)
+            param_iterations.append(param_iteration)
 
-    return param_combos
-
-
-def compile_all_parameter_cominations(param_dict, runs_per_combo):
-    # Get combos of intervention parameters first, then put combos back in params object
-    intervention_params = param_dict.pop("intervention_params")
-    intervention_combos = parameter_combinations(intervention_params, runs_per_combo=1)
-    param_dict.update({"intervention_params": intervention_combos})
-
-    # Create all combinations of parameters and interventions
-    param_combos = parameter_combinations(
-        param_dict=param_dict,
-        runs_per_combo=runs_per_combo,
-        nonvarying_names=["baserates", "sui_ORs"],
-    )
+        param_combos.extend(param_iterations)
 
     return param_combos
 
@@ -45,7 +41,14 @@ if __name__ == "__main__":
     with open("input_params.json", "r") as f:
         params = json.load(f)
 
-    param_combos = compile_all_parameter_cominations(params, runs_per_combo=10)
+    param_combos = param_combinations(
+        param_dict=params, runs_per_combo=100, number_iterations=True
+    )
 
-    with open("experiments/input_parameter_combinations.json", "w") as f:
+    for param_combo in param_combos:
+        param_combo.update({"seed": random.randint(a=1e6, b=1e7)})
+
+    with open(
+        "experiments/mock_experiment/input_parameter_combinations.json", "w"
+    ) as f:
         f.write(json.dumps(param_combos))

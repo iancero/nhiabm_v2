@@ -1,31 +1,49 @@
 import os, json
+import random
+import multiprocessing as mp
+import time
 
 from simulation import Simulation
 
-# a test change for git
+
+def run_simulation(params):
+    random.seed(params["seed"])
+
+    sim = Simulation(**params)
+    sim.setup()
+    sim.go()
+
+    result_path = f"experiments/mock_experiment/sim_results_{params['seed']}.json"
+    with open(result_path, "w") as f:
+        f.write(json.dumps(sim.history))
+
+    return result_path
+
+
+def main():
+    experiment_dir = "experiments/mock_experiment/"
+    param_file = os.path.join(experiment_dir, "input_parameter_combinations.json")
+    with open(param_file, "r") as f:
+        param_combos = json.load(f)
+
+    with mp.Pool(processes=mp.cpu_count()) as pool:
+        results = pool.map_async(run_simulation, param_combos)
+
+        # close the process pool
+        pool.close()
+
+        # wait for all tasks to complete
+        pool.join()
+
+    return results
+
 
 if __name__ == "__main__":
 
-    experiment_dir = "experiments/practice_exp_1/"
-    param_dir = os.path.join(experiment_dir, "params")
-    result_dir = os.path.join(experiment_dir, "results")
+    # Note: took about 2.5 hours for 20,000 samples
 
-    param_files = [f for f in os.listdir(param_dir) if f.endswith(".json")]
-    result_files = [f"results_{param_file}" for param_file in param_files]
+    print("Start", time.ctime())
 
-    for param_file, result_file in zip(param_files, result_files):
+    main()
 
-        # Read in parameter information
-        param_path = os.path.join(param_dir, param_file)
-        with open(param_path, "r") as f:
-            params = json.load(f)
-
-        # Run simulation from start to finish
-        sim = Simulation(**params)
-        sim.setup()
-        sim.go()
-
-        # Write simulation history to output json file
-        result_path = os.path.join(result_dir, result_file)
-        with open(result_path, "w") as f:
-            f.write(json.dumps(sim.history))
+    print("Done", time.ctime())

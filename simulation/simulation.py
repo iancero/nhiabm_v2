@@ -3,7 +3,12 @@ import itertools
 import json
 import random
 import igraph as ig
-from intervention import NetworkIntervention, IndividualIntervention, MockIntervention
+from intervention import (
+    NetworkIntervention,
+    IndividualIntervention,
+    MockInterventionA,
+    MockInterventionB,
+)
 from agent import Agent
 
 

@@ -2,7 +2,8 @@ import copy
 import random
 from intervention import (
     Intervention,
-    MockIntervention,
+    MockInterventionA,
+    MockInterventionB,
     NetworkIntervention,
     IndividualIntervention,
 )
@@ -447,10 +448,10 @@ class TestIndividualIntervention:
         assert not any(untar_changes)
 
 
-class TestMockIntervention:
+class TestMockInterventionA:
     def test_setup(self):
         intv_params = {
-            "intv_class_name": "MockIntervention",
+            "intv_class_name": "MockInterventionA",
             "start_tick": 5,
             "duration": 3,
             "tar_severity": [0.50, 0.75],
@@ -459,7 +460,7 @@ class TestMockIntervention:
             "p_beh_change": 0.50,
         }
 
-        intv = MockIntervention(**intv_params)
+        intv = MockInterventionA(**intv_params)
 
         # A lot of agents to ensure we can test enrollment statistically below
         agents = [Agent(id=i, n_beh=3) for i in range(100)]
@@ -494,7 +495,7 @@ class TestMockIntervention:
 
         # Intervention
         intv_params = {
-            "intv_class_name": "MockIntervention",
+            "intv_class_name": "MockInterventionA",
             "start_tick": 5,
             "duration": 3,
             "tar_severity": [0.50, 0.75],
@@ -503,7 +504,104 @@ class TestMockIntervention:
             "p_beh_change": 0.50,
         }
 
-        intv = MockIntervention(**intv_params)
+        intv = MockInterventionA(**intv_params)
+
+        world_params = {"sui_ORs": random.sample(range(2, 50), 32)}
+
+        intv.setup(agents=agents, network="placeholder", **world_params)
+
+        old_es = [e.tuple for e in network.es]
+        old_agents = copy.deepcopy(agents)
+
+        intv.intervene(agents, network)
+
+        new_es = [e.tuple for e in network.es]
+
+        # No edges should be changed
+        assert new_es
+        assert set(old_es) == set(new_es)
+
+        # Calculate all the changes produced by intv and where they occured
+        tar_changes = []
+        untar_changes = []
+        for old, new in zip(old_agents, agents):
+            for i, beh_pair in enumerate(zip(old.beh, new.beh)):
+
+                # Changes we expect to sometimes see because they are targeted
+                if i in intv.tar_beh:
+                    tar_changes.append(beh_pair[1] - beh_pair[0])
+
+                # Changes we expect never to see because they are untargeted
+                else:
+                    untar_changes.append(beh_pair[1] - beh_pair[0])
+
+        # at least some changes, and all were for the better
+        assert tar_changes
+        assert any(tar_changes)
+        assert all([change in [-1, 0, 1] for change in tar_changes])
+
+        # no untargeted changes
+        assert untar_changes
+        assert not any(untar_changes)
+
+
+class TestMockInterventionB:
+    def test_setup(self):
+        intv_params = {
+            "intv_class_name": "MockInterventionB",
+            "start_tick": 5,
+            "duration": 3,
+            "tar_severity": [0.50, 0.75],
+            "p_rewire": 0.25,
+            "p_enrolled": 0.50,
+            "p_beh_change": 0.50,
+        }
+
+        intv = MockInterventionB(**intv_params)
+
+        # A lot of agents to ensure we can test enrollment statistically below
+        agents = [Agent(id=i, n_beh=3) for i in range(100)]
+
+        world_params = {
+            "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
+        }
+
+        intv.setup(agents=agents, network="placeholder", **world_params)
+
+        assert intv.sui_ORs == world_params["sui_ORs"]
+        assert intv.tar_severity == intv_params["tar_severity"]
+        assert intv.tar_beh
+        assert all([i in [4, 5] for i in intv.tar_beh])
+
+        # Should enroll about 50% of the 100 agents
+        assert (25 < len(intv.enrolled_names)) & (len(intv.enrolled_names) < 75)
+
+    def test_intervene(self):
+        # Network
+        network = ig.Graph.Erdos_Renyi(n=20, p=0.50)
+
+        # Agents
+        agents = []
+        for i, v in enumerate(network.vs):
+            agent = Agent(id=i, n_beh=32)
+
+            # Vertex and agent must have same name
+            v["name"] = agent.name
+
+            agents.append(agent)
+
+        # Intervention
+        intv_params = {
+            "intv_class_name": "MockInterventionB",
+            "start_tick": 5,
+            "duration": 3,
+            "tar_severity": [0.50, 0.75],
+            "p_rewire": 0.50,
+            "p_enrolled": 0.50,
+            "p_beh_change": 0.50,
+        }
+
+        intv = MockInterventionB(**intv_params)
 
         world_params = {"sui_ORs": random.sample(range(2, 50), 32)}
 

@@ -3,6 +3,7 @@ import random
 import multiprocessing as mp
 import time
 
+from parameter_combos import experimental_conditions
 from simulation import Simulation
 
 
@@ -22,17 +23,17 @@ def run_simulation(params):
 
 def main():
     experiment_dir = "experiments/mock_experiment/"
-    param_file = os.path.join(experiment_dir, "input_parameter_combinations.json")
-    with open(param_file, "r") as f:
-        param_combos = json.load(f)
+
+    input_param_file = os.path.join(experiment_dir, "input_params2.json")
+    sample_parameters = experimental_conditions(input_param_file, n_samples=1000)
+
+    for i, samp in enumerate(sample_parameters):
+        x = run_simulation(samp)
+        print(x)
 
     with mp.Pool(processes=mp.cpu_count()) as pool:
-        results = pool.map_async(run_simulation, param_combos)
-
-        # close the process pool
+        results = pool.map_async(run_simulation, sample_parameters, chunksize=50)
         pool.close()
-
-        # wait for all tasks to complete
         pool.join()
 
     return results
@@ -40,7 +41,7 @@ def main():
 
 if __name__ == "__main__":
 
-    # Note: took about 2.5 hours for 20,000 samples
+    # note: took about 2.5 hours for 20,000 samples
 
     print("Start", time.ctime())
 

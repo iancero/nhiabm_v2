@@ -57,6 +57,7 @@ class Intervention:
 
     def as_dict(self):
         d = {
+            "intv_type": self.__class__.__name__,
             "start_tick": self.start_tick,
             "duration": self.duration,
             "last_tick": self.last_tick,

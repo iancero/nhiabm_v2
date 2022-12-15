@@ -14,7 +14,7 @@ def run_simulation(params):
     sim.setup()
     sim.go()
 
-    result_path = f"experiments/mock_experiment/sim_results_{params['seed']}.json"
+    result_path = f"experiments/mock_experiment/sim_results_{params['sample_num']}.json"
     with open(result_path, "w") as f:
         f.write(json.dumps(sim.history))
 
@@ -24,7 +24,7 @@ def run_simulation(params):
 def main():
     experiment_dir = "experiments/mock_experiment/"
 
-    input_param_file = os.path.join(experiment_dir, "input_params2.json")
+    input_param_file = os.path.join(experiment_dir, "mock_input_params.json")
     sample_parameters = experimental_conditions(input_param_file, n_samples=1000)
 
     for i, samp in enumerate(sample_parameters):

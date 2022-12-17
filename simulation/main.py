@@ -3,7 +3,7 @@ import random
 import multiprocessing as mp
 import time
 
-from parameter_combos import experimental_conditions
+from parameter_sampling import sample_parameter_space
 from simulation import Simulation
 
 
@@ -25,7 +25,7 @@ def main():
     experiment_dir = "experiments/mock_experiment/"
 
     input_param_file = os.path.join(experiment_dir, "mock_input_params.json")
-    sample_parameters = experimental_conditions(input_param_file, n_samples=1000)
+    sample_parameters = sample_parameter_space(input_param_file, n_samples=1000)
 
     for i, samp in enumerate(sample_parameters):
         x = run_simulation(samp)

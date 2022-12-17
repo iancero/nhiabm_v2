@@ -21,8 +21,8 @@ class Agent(object):
     def __str__(self) -> str:
         return f"{self.name}: {'-'.join([str(b) for b in self.beh])}"
 
-    def as_dict(self) -> dict:
-        d = {
+    def as_dict(self, beh_as_list=False) -> dict:
+        dic = {
             "id": self.id,
             "name": self.name,
             "beh": self.beh,
@@ -30,7 +30,11 @@ class Agent(object):
             "attempt_count": self.attempts,
         }
 
-        return d
+        if not beh_as_list:
+            for i, beh in enumerate(dic.pop("beh")):
+                dic.update({f"beh{i}": beh})
+
+        return dic
 
     def emulate(self, alter, p):
         for i, alter_beh in enumerate(alter.beh):

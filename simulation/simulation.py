@@ -3,6 +3,9 @@ import itertools
 import json
 import random
 import igraph as ig
+import sqlite3
+import pandas as pd
+
 from intervention import (
     NetworkIntervention,
     IndividualIntervention,
@@ -157,14 +160,47 @@ class Simulation:
 
         return intv_dicts
 
+    def params_to_dict(self, flat=True, in_list=True):
+        params = copy.deepcopy(self.__dict__)
+
+        non_params = ["network", "agents", "interventions", "history"]
+        params = {key: val for key, val in params.items() if key not in non_params}
+
+        intv_params = params.pop("intervention_params")[0]
+
+        if flat:
+            listlike_params = ["tar_severity"]
+            for listlike in listlike_params:
+                for i, item in enumerate(intv_params.pop(listlike)):
+                    intv_params.update({f"{listlike}{i}": item})
+
+            listlike_params = ["sui_ORs", "baserates"]
+            for listlike in listlike_params:
+                for i, item in enumerate(params.pop(listlike)):
+                    params.update({f"{listlike}{i}": item})
+
+        params.update(intv_params)
+
+        if in_list:
+            params = [params]
+
+        return params
+
     def record_history(self):
         a = copy.deepcopy(self.agents_to_dict())
         e = copy.deepcopy(self.edges_to_dict())
         v = copy.deepcopy(self.verts_to_dict())
         i = copy.deepcopy(self.interventions_to_dict())
+        p = copy.deepcopy(self.params_to_dict())
 
         self.history.append(
-            {"agents": a, "edges": e, "vertices": v, "interventions": i}
+            {
+                "agents": a,
+                "edges": e,
+                "vertices": v,
+                "interventions": i,
+                "parameters": p,
+            }
         )
 
     def remaining_ticks(self):
@@ -174,3 +210,30 @@ class Simulation:
         with open(file_name, "w") as outfile:
             history_json = json.dumps(self.history)
             outfile.write(history_json)
+
+    def history_to_dataframe(self, history_of):
+        history = [h[history_of] for h in self.history]
+
+        for tick, objs in enumerate(history):
+            for obj in objs:
+                obj.update({"tick": tick})
+
+        df = pd.concat([pd.DataFrame(moment) for moment in history])
+
+        return df
+
+    def history_to_db(self, con, history_of=None, simplify=True):
+        if history_of is None:
+            history_aspects = ["agents", "edges", "parameters"]
+        else:
+            history_aspects = history_of
+
+        for history_aspect in history_aspects:
+            history = self.history_to_dataframe(history_aspect)
+            history["seed"] = self.seed
+            history["sample_num"] = self.sample_num
+
+            if simplify and history_aspect == "parameters":
+                history = history.iloc[[0]]
+
+            history.to_sql(history_aspect, con, if_exists="append", index=False)

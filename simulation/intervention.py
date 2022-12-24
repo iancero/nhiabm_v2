@@ -77,6 +77,9 @@ class NetworkIntervention(Intervention):
             if random.random() < self.p_enrolled:
                 self.enrolled_names.append(agent.name)
 
+                for agent in self.enrolled_agents(agents):
+                    agent.enrolled = True
+
     def intervene(self, agents, network):
         network.rewire_edges(self.p_rewire)
 
@@ -127,7 +130,8 @@ class IndividualIntervention(Intervention):
 
         self.enrolled_names = enrolled_names
 
-        assert all([len(self.sui_ORs) == len(a.beh) for a in agents])
+        for agent in self.enrolled_agents(agents):
+            agent.enrolled = True
 
     def priority_behaviors(self, agent):
         risk_ranks = self.risk_factor_ranks(self.sui_ORs)
@@ -164,6 +168,9 @@ class MockInterventionA(Intervention):
             if random.random() < self.p_enrolled:
                 self.enrolled_names.append(agent.name)
 
+                for agent in self.enrolled_agents(agents):
+                    agent.enrolled = True
+
     def intervene(self, agents, network):
 
         # There is a random change that the targeted behaviors will simply
@@ -195,6 +202,9 @@ class MockInterventionB(Intervention):
         for agent in agents:
             if random.random() < self.p_enrolled:
                 self.enrolled_names.append(agent.name)
+
+                for agent in self.enrolled_agents(agents):
+                    agent.enrolled = True
 
     def intervene(self, agents, network):
 

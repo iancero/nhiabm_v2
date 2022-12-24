@@ -15,6 +15,7 @@ class Agent(object):
         self.attempts = 0
         self.current_emulations = 0
         self.current_emulated_risk_factors = 0
+        self.enrolled = False
 
         if baserates is not None:
             self.beh = [int(random.random() < p) for p in baserates]
@@ -34,6 +35,7 @@ class Agent(object):
             "cur_attempt": self.current_attempt,
             "cur_emulations": self.current_emulations,
             "cur_emulated_risk_factors": self.current_emulated_risk_factors,
+            "enrolled": self.enrolled,
         }
 
         if not beh_as_list:

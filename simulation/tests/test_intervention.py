@@ -184,12 +184,15 @@ class TestNetworkIntervention:
             "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
         }
 
+        assert not any([a.enrolled for a in agents])
+
         intv.setup(agents=agents, network="placeholder", **world_params)
 
         assert intv.sui_ORs == world_params["sui_ORs"]
         assert intv.tar_severity == intv_params["tar_severity"]
         assert intv.tar_beh
         assert all([i in [4, 5] for i in intv.tar_beh])
+        assert any([a.enrolled for a in agents])
 
         # Should enroll about 50% of the 100 agents
         assert (25 < len(intv.enrolled_names)) & (len(intv.enrolled_names) < 75)
@@ -345,10 +348,13 @@ class TestIndividualIntervention:
 
         correct_enrollment = ["id_2", "id_3"]
 
+        assert not any([a.enrolled for a in agents])
+
         intv.setup(agents=agents, network="placeholder", **world_params)
 
         assert intv.treatable_beh == 3
         assert intv.enrolled_names == correct_enrollment
+        assert any([a.enrolled for a in agents])
 
     def test_priority_behaviors(self):
         intv_params = {
@@ -469,12 +475,15 @@ class TestMockInterventionA:
             "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
         }
 
+        assert not any([a.enrolled for a in agents])
+
         intv.setup(agents=agents, network="placeholder", **world_params)
 
         assert intv.sui_ORs == world_params["sui_ORs"]
         assert intv.tar_severity == intv_params["tar_severity"]
         assert intv.tar_beh
         assert all([i in [4, 5] for i in intv.tar_beh])
+        assert any([a.enrolled for a in agents])
 
         # Should enroll about 50% of the 100 agents
         assert (25 < len(intv.enrolled_names)) & (len(intv.enrolled_names) < 75)
@@ -566,12 +575,15 @@ class TestMockInterventionB:
             "sui_ORs": [2.2, 1.1, 4.4, 3.3, 5.5, 6.6, 7.7, 8.8],
         }
 
+        assert not any([a.enrolled for a in agents])
+
         intv.setup(agents=agents, network="placeholder", **world_params)
 
         assert intv.sui_ORs == world_params["sui_ORs"]
         assert intv.tar_severity == intv_params["tar_severity"]
         assert intv.tar_beh
         assert all([i in [4, 5] for i in intv.tar_beh])
+        assert any([a.enrolled for a in agents])
 
         # Should enroll about 50% of the 100 agents
         assert (25 < len(intv.enrolled_names)) & (len(intv.enrolled_names) < 75)

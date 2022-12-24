@@ -13,8 +13,13 @@ class Agent(object):
         self.current_risk = 0
         self.current_attempt = 0
         self.attempts = 0
+        self.emulatable_alters = 0
+        self.recruited_alters = 0
+        self.pruned_alters = 0
         self.current_emulations = 0
         self.current_emulated_risk_factors = 0
+        self.current_spon_changes = 0
+        self.current_spon_risk_factors = 0
         self.enrolled = False
 
         if baserates is not None:
@@ -33,8 +38,13 @@ class Agent(object):
             "cur_risk": self.current_risk,
             "attempt_count": self.attempts,
             "cur_attempt": self.current_attempt,
+            "emulatable_alters": self.emulatable_alters,
             "cur_emulations": self.current_emulations,
             "cur_emulated_risk_factors": self.current_emulated_risk_factors,
+            "current_spon_risk_factors": self.current_spon_risk_factors,
+            "current_spon_changes": self.current_spon_changes,
+            "recruited_alters": self.recruited_alters,
+            "pruned_alters": self.pruned_alters,
             "enrolled": self.enrolled,
         }
 
@@ -55,6 +65,8 @@ class Agent(object):
 
         alters = self.alters(agents, network)
 
+        self.emulatable_alters = len(alters)
+
         if not any(alters):
             return None
 
@@ -67,9 +79,15 @@ class Agent(object):
                 self.current_emulated_risk_factors += alter.beh[i]
 
     def spontaneously_change(self, baserates, susceptibility):
+        self.current_spon_changes = 0
+        self.current_spon_risk_factors = 0
+
         for i, beh in enumerate(self.beh):
             if random.random() < susceptibility:
                 self.beh[i] = int(random.random() < baserates[i])
+
+                self.current_spon_changes += 1
+                self.current_spon_risk_factors += self.beh[i]
 
         return self
 
@@ -79,6 +97,7 @@ class Agent(object):
         return sim
 
     def recruit_alters(self, agents, network, sim_thresh=0.50):
+        self.recruited_alters = 0
 
         neighborhood = network.neighborhood(self.network_index(network))
         pot_alters = [a for a in agents if a.network_index(network) not in neighborhood]
@@ -88,10 +107,12 @@ class Agent(object):
             if similar_enough:
                 new_edge = (self.network_index(network), alter.network_index(network))
                 network.add_edges([new_edge])
+                self.recruited_alters += 1
 
         return self
 
     def prune_alters(self, agents, network, sim_thresh=0.50):
+        self.pruned_alters = 0
 
         alters = self.alters(agents, network)
 
@@ -99,6 +120,7 @@ class Agent(object):
             if self.similarity(alter) < sim_thresh:
                 bad_edge = (self.network_index(network), alter.network_index(network))
                 network.delete_edges([bad_edge])
+                self.pruned_alters += 1
 
         return self
 

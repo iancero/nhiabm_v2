@@ -54,6 +54,7 @@ class TestAgent:
     def test_emulate_alters(self):
         a = Agent(id=1, n_beh=3)
         a.beh = [0, 0, 0]
+        assert a.emulatable_alters == 0
 
         b = Agent(id=2, n_beh=3)
         b.beh = [1, 1, 1]
@@ -73,31 +74,44 @@ class TestAgent:
         assert a.beh == [0, 0, 0]
         assert a.current_emulations == 0
         assert a.current_emulated_risk_factors == 0
+        assert a.emulatable_alters == 2
 
         # only b and c should be emulated given this network arrangement
         a.emulate_alters(agents, net, p=1)
         assert all([b in [1, 2] for b in a.beh])
         assert a.current_emulations == 3
+        assert a.current_emulated_risk_factors >= 3
+        assert a.emulatable_alters == 2
 
     def test_spontaneously_change(self):
         a = Agent(id=1, n_beh=3)
         a.beh = [0, 0, 0]
+        assert a.current_spon_changes == 0
+        assert a.current_spon_risk_factors == 0
 
         baserates = [1, 1, 1]
         a.spontaneously_change(baserates, susceptibility=1)
         assert a.beh == [1, 1, 1]
+        assert a.current_spon_changes == 3
+        assert a.current_spon_risk_factors == 3
 
         baserates = [0, 0, 0]
         a.spontaneously_change(baserates, susceptibility=1)
         assert a.beh == [0, 0, 0]
+        assert a.current_spon_changes == 3
+        assert a.current_spon_risk_factors == 0
 
         baserates = [0, 1, 0]
         a.spontaneously_change(baserates, susceptibility=1)
         assert a.beh == [0, 1, 0]
+        assert a.current_spon_changes == 3
+        assert a.current_spon_risk_factors == 1
 
         baserates = [1, 1, 1]
         a.spontaneously_change(baserates, susceptibility=0)
         assert a.beh == [0, 1, 0]
+        assert a.current_spon_changes == 0
+        assert a.current_spon_risk_factors == 0
 
     def test_network_index(self):
         a = Agent(id=1, n_beh=3)
@@ -167,6 +181,7 @@ class TestAgent:
         # be relied on
         a = Agent(id=33, n_beh=3)
         a.beh = [1, 1, 1]
+        assert a.recruited_alters == 0
 
         # 66% similar (should recruit when thresh = .50)
         b = Agent(id=101, n_beh=3)
@@ -190,6 +205,7 @@ class TestAgent:
 
         # with this sim_thresh, b should be recruited, but no one else
         a.recruit_alters(agents, net, sim_thresh=0.50)
+        assert a.recruited_alters == 1
 
         # Use vertex names, no edge attributes
         edges = [(e.source_vertex["name"], e.target_vertex["name"]) for e in net.es]
@@ -202,6 +218,7 @@ class TestAgent:
         # be relied on
         a = Agent(id=33, n_beh=3)
         a.beh = [1, 1, 1]
+        assert a.pruned_alters == 0
 
         # 66% similar (should NOT prune when thresh = .50)
         b = Agent(id=101, n_beh=3)
@@ -224,6 +241,7 @@ class TestAgent:
 
         # with this sim_thresh b should be retained, but c should be pruned
         a.prune_alters(agents, net, sim_thresh=0.50)
+        assert a.pruned_alters == 1
 
         edges = [(e.source_vertex["name"], e.target_vertex["name"]) for e in net.es]
         assert ("id_33", "id_101") in edges  # should be retained

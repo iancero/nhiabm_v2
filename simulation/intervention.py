@@ -1,3 +1,4 @@
+from math import ceil
 import random
 
 
@@ -51,8 +52,6 @@ class Intervention:
         return tar_beh
 
     def enrolled_agents(self, agents):
-        assert self.enrolled_names
-
         return [a for a in agents if a.name in self.enrolled_names]
 
     def as_dict(self):
@@ -72,13 +71,11 @@ class NetworkIntervention(Intervention):
         super().setup(agents, network, **kwargs)
         self.tar_beh = self.target_behaviors(self.sui_ORs, self.tar_severity)
 
-        self.enrolled_names = []
-        for agent in agents:
-            if random.random() < self.p_enrolled:
-                self.enrolled_names.append(agent.name)
+        enrolled_agents = agents[0 : ceil(self.p_enrolled * len(agents))]
+        self.enrolled_names = [a.name for a in enrolled_agents]
 
-                for agent in self.enrolled_agents(agents):
-                    agent.enrolled = True
+        for agent in enrolled_agents:
+            agent.enrolled = True
 
     def intervene(self, agents, network):
         network.rewire_edges(self.p_rewire)
@@ -125,10 +122,8 @@ class IndividualIntervention(Intervention):
 
         # Enroll the highest risk agents
         ranked_agents = self.prioritize_agents(agents, self.sui_ORs)
-        enrolled_agents = ranked_agents[0 : round(self.p_enrolled * len(ranked_agents))]
-        enrolled_names = [a.name for a in enrolled_agents]
-
-        self.enrolled_names = enrolled_names
+        enrolled_agents = ranked_agents[0 : ceil(self.p_enrolled * len(ranked_agents))]
+        self.enrolled_names = [a.name for a in enrolled_agents]
 
         for agent in self.enrolled_agents(agents):
             agent.enrolled = True
@@ -163,13 +158,11 @@ class MockInterventionA(Intervention):
         super().setup(agents, network, **kwargs)
         self.tar_beh = self.target_behaviors(self.sui_ORs, self.tar_severity)
 
-        self.enrolled_names = []
-        for agent in agents:
-            if random.random() < self.p_enrolled:
-                self.enrolled_names.append(agent.name)
+        enrolled_agents = agents[0 : ceil(self.p_enrolled * len(agents))]
+        self.enrolled_names = [a.name for a in enrolled_agents]
 
-                for agent in self.enrolled_agents(agents):
-                    agent.enrolled = True
+        for agent in enrolled_agents:
+            agent.enrolled = True
 
     def intervene(self, agents, network):
 
@@ -193,13 +186,11 @@ class MockInterventionB(Intervention):
         super().setup(agents, network, **kwargs)
         self.tar_beh = self.target_behaviors(self.sui_ORs, self.tar_severity)
 
-        self.enrolled_names = []
-        for agent in agents:
-            if random.random() < self.p_enrolled:
-                self.enrolled_names.append(agent.name)
+        enrolled_agents = agents[0 : ceil(self.p_enrolled * len(agents))]
+        self.enrolled_names = [a.name for a in enrolled_agents]
 
-                for agent in self.enrolled_agents(agents):
-                    agent.enrolled = True
+        for agent in enrolled_agents:
+            agent.enrolled = True
 
     def intervene(self, agents, network):
 

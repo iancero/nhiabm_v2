@@ -1,50 +1,43 @@
-import os, json
+from itertools import repeat
 import random
-import multiprocessing as mp
-import time
 
+from sqlite_utils import Database
 from parameter_sampling import sample_parameter_space
 from simulation import Simulation
+import multiprocessing as mp
+
+import time
 
 
-def run_simulation(params):
-    random.seed(params["seed"])
+def run_simulation(sim_id):
+
+    print(f"starting {sim_id}")
+
+    param_file = "experiments/mock_experiment/mock_input_params.json"
+    params = sample_parameter_space(param_file, n_samples=1)[0]
+    params.update({"sim_id": sim_id})
 
     sim = Simulation(**params)
     sim.setup()
     sim.go()
 
-    result_path = f"experiments/mock_experiment/sim_results_{params['sample_num']}.json"
-    with open(result_path, "w") as f:
-        f.write(json.dumps(sim.history))
+    print(f"returning {sim_id}")
 
-    return result_path
-
-
-def main():
-    experiment_dir = "experiments/mock_experiment/"
-
-    input_param_file = os.path.join(experiment_dir, "mock_input_params.json")
-    sample_parameters = sample_parameter_space(input_param_file, n_samples=1000)
-
-    for i, samp in enumerate(sample_parameters):
-        x = run_simulation(samp)
-        print(x)
-
-    with mp.Pool(processes=mp.cpu_count()) as pool:
-        results = pool.map_async(run_simulation, sample_parameters, chunksize=50)
-        pool.close()
-        pool.join()
-
-    return results
+    return sim.history_for_db()
 
 
 if __name__ == "__main__":
 
-    # note: took about 2.5 hours for 20,000 samples
+    print(time.ctime())
 
-    print("Start", time.ctime())
+    with mp.Pool(processes=8) as pool:
+        db = Database("test.db")
 
-    main()
+        for result in pool.imap_unordered(run_simulation, range(104)):
 
-    print("Done", time.ctime())
+            for aspect, content in result.items():
+                db[aspect].insert_all(content)
+
+        db.close()
+
+    print(time.ctime())

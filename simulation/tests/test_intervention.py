@@ -510,7 +510,7 @@ class TestMockInterventionA:
             "tar_severity": [0.50, 0.75],
             "p_rewire": 0.50,
             "p_enrolled": 0.50,
-            "p_beh_change": 0.50,
+            "p_beh_change": 0.750,
         }
 
         intv = MockInterventionA(**intv_params)
@@ -518,9 +518,14 @@ class TestMockInterventionA:
         world_params = {"sui_ORs": random.sample(range(2, 50), 32)}
 
         intv.setup(agents=agents, network="placeholder", **world_params)
+        assert len(intv.enrolled_agents(agents)) > 2
+        assert len(intv.enrolled_agents(agents)) < 18
 
         old_es = [e.tuple for e in network.es]
-        old_agents = copy.deepcopy(agents)
+        old_enrolled = copy.deepcopy(intv.enrolled_agents(agents))
+        old_non_enrolled = copy.deepcopy(
+            [a for a in agents if not a in intv.enrolled_agents(agents)]
+        )
 
         intv.intervene(agents, network)
 
@@ -530,28 +535,20 @@ class TestMockInterventionA:
         assert new_es
         assert set(old_es) == set(new_es)
 
-        # Calculate all the changes produced by intv and where they occured
-        tar_changes = []
-        untar_changes = []
-        for old, new in zip(old_agents, agents):
-            for i, beh_pair in enumerate(zip(old.beh, new.beh)):
+        enrolled = intv.enrolled_agents(agents)
+        non_enrolled = [a for a in agents if not a in intv.enrolled_agents(agents)]
 
-                # Changes we expect to sometimes see because they are targeted
-                if i in intv.tar_beh:
-                    tar_changes.append(beh_pair[1] - beh_pair[0])
+        non_enrolled_changes = [
+            sum(old.beh) - sum(new.beh)
+            for old, new in zip(old_non_enrolled, non_enrolled)
+        ]
+        assert not any(non_enrolled_changes)
 
-                # Changes we expect never to see because they are untargeted
-                else:
-                    untar_changes.append(beh_pair[1] - beh_pair[0])
-
-        # at least some changes, and all were for the better
-        assert tar_changes
-        assert any(tar_changes)
-        assert all([change in [-1, 0, 1] for change in tar_changes])
-
-        # no untargeted changes
-        assert untar_changes
-        assert not any(untar_changes)
+        enrolled_changes = [
+            sum(old.beh) - sum(new.beh) for old, new in zip(old_enrolled, enrolled)
+        ]
+        assert any(enrolled_changes)
+        assert any([sum(a.beh) == 2 for a in enrolled])
 
 
 class TestMockInterventionB:
@@ -610,7 +607,7 @@ class TestMockInterventionB:
             "tar_severity": [0.50, 0.75],
             "p_rewire": 0.50,
             "p_enrolled": 0.50,
-            "p_beh_change": 0.50,
+            "p_beh_change": 0.750,
         }
 
         intv = MockInterventionB(**intv_params)
@@ -620,7 +617,10 @@ class TestMockInterventionB:
         intv.setup(agents=agents, network="placeholder", **world_params)
 
         old_es = [e.tuple for e in network.es]
-        old_agents = copy.deepcopy(agents)
+        old_enrolled = copy.deepcopy(intv.enrolled_agents(agents))
+        old_non_enrolled = copy.deepcopy(
+            [a for a in agents if not a in intv.enrolled_agents(agents)]
+        )
 
         intv.intervene(agents, network)
 
@@ -630,25 +630,17 @@ class TestMockInterventionB:
         assert new_es
         assert len(new_es) < len(old_es)
 
-        # Calculate all the changes produced by intv and where they occured
-        tar_changes = []
-        untar_changes = []
-        for old, new in zip(old_agents, agents):
-            for i, beh_pair in enumerate(zip(old.beh, new.beh)):
+        enrolled = intv.enrolled_agents(agents)
+        non_enrolled = [a for a in agents if not a in intv.enrolled_agents(agents)]
 
-                # Changes we expect to sometimes see because they are targeted
-                if i in intv.tar_beh:
-                    tar_changes.append(beh_pair[1] - beh_pair[0])
+        non_enrolled_changes = [
+            sum(old.beh) - sum(new.beh)
+            for old, new in zip(old_non_enrolled, non_enrolled)
+        ]
+        assert not any(non_enrolled_changes)
 
-                # Changes we expect never to see because they are untargeted
-                else:
-                    untar_changes.append(beh_pair[1] - beh_pair[0])
-
-        # at least some changes, and all were for the better
-        assert tar_changes
-        assert any(tar_changes)
-        assert all([change in [-1, 0, 1] for change in tar_changes])
-
-        # no untargeted changes
-        assert untar_changes
-        assert not any(untar_changes)
+        enrolled_changes = [
+            sum(old.beh) - sum(new.beh) for old, new in zip(old_enrolled, enrolled)
+        ]
+        assert any(enrolled_changes)
+        assert any([sum(a.beh) == 2 for a in enrolled])

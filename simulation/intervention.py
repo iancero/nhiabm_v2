@@ -173,24 +173,19 @@ class MockInterventionA(Intervention):
 
     def intervene(self, agents, network):
 
-        # There is a random change that the targeted behaviors will simply
-        # be shuffled for each agent
-
+        # Each enrollee has a chance for their total beh to become proportional
+        # to their degree. Fewer alters means GREATER total beh
         enrollees = self.enrolled_agents(agents)
 
         for agent in enrollees:
+            old_total = sum(agent.beh)
+
             if random.random() < self.p_beh_change:
-                rep_beh = [b for i, b in enumerate(agent.beh) if i in self.tar_beh]
-                random.shuffle(rep_beh)
+                agent.beh = ([1] * 2) + ([0] * (len(agent.beh) - 2))
 
-                for rep_i, beh_i in enumerate(self.tar_beh):
-                    # if this behavior was actually bad to start,
-                    # document the improvement
-                    self.beh_changed += int(
-                        (agent.beh[beh_i] == 1) & (rep_beh[rep_i] == 0)
-                    )
+                random.shuffle(agent.beh)
 
-                    agent.beh[beh_i] = rep_beh[rep_i]
+                self.beh_changed += old_total - sum(agent.beh)
 
 
 class MockInterventionB(Intervention):
@@ -208,25 +203,21 @@ class MockInterventionB(Intervention):
 
     def intervene(self, agents, network):
 
-        # There is a random change that the targeted behaviors will simply
-        # be shuffled for each agent
+        # Each enrollee has a chance for their total beh to become proportional
+        # to their degree. Fewer alters means GREATER total beh
         enrollees = self.enrolled_agents(agents)
 
         for agent in enrollees:
+            old_total = sum(agent.beh)
+
             if random.random() < self.p_beh_change:
-                rep_beh = [b for i, b in enumerate(agent.beh) if i in self.tar_beh]
-                random.shuffle(rep_beh)
+                agent.beh = ([1] * 2) + ([0] * (len(agent.beh) - 2))
 
-                for rep_i, beh_i in enumerate(self.tar_beh):
-                    # if this behavior was actually bad to start,
-                    # document the improvement
-                    self.beh_changed += int(
-                        (agent.beh[beh_i] == 1) & (rep_beh[rep_i] == 0)
-                    )
+                random.shuffle(agent.beh)
 
-                    agent.beh[beh_i] = rep_beh[rep_i]
+                self.beh_changed += old_total - sum(agent.beh)
 
-        # There is a random chance edges will simply be deleted
+        # ALSO There is a random chance edges will simply be deleted
         for e in network.es:
             if random.random() < self.p_rewire:
                 network.delete_edges(e.index)

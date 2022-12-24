@@ -13,6 +13,8 @@ class Agent(object):
         self.current_risk = 0
         self.current_attempt = 0
         self.attempts = 0
+        self.current_emulations = 0
+        self.current_emulated_risk_factors = 0
 
         if baserates is not None:
             self.beh = [int(random.random() < p) for p in baserates]
@@ -30,6 +32,8 @@ class Agent(object):
             "cur_risk": self.current_risk,
             "attempt_count": self.attempts,
             "cur_attempt": self.current_attempt,
+            "cur_emulations": self.current_emulations,
+            "cur_emulated_risk_factors": self.current_emulated_risk_factors,
         }
 
         if not beh_as_list:
@@ -44,15 +48,21 @@ class Agent(object):
                 self.beh[i] = alter_beh
 
     def emulate_alters(self, agents, network, p):
+        self.current_emulations = 0
+        self.current_emulated_risk_factors = 0
+
         alters = self.alters(agents, network)
 
         if not any(alters):
             return None
 
-        for i, beh in enumerate(self.beh):
+        for i, _ in enumerate(self.beh):
             if random.random() < p:
                 alter = random.choice(alters)
                 self.beh[i] = alter.beh[i]
+
+                self.current_emulations += 1
+                self.current_emulated_risk_factors += alter.beh[i]
 
     def spontaneously_change(self, baserates, susceptibility):
         for i, beh in enumerate(self.beh):

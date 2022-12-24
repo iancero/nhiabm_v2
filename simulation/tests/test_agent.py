@@ -18,6 +18,8 @@ class TestAgent:
         assert a.attempts == 0
         assert isinstance(a.id, int)
         assert isinstance(a.beh, list)
+        assert a.current_emulations == 0
+        assert a.current_emulated_risk_factors == 0
 
         b = Agent(id=2, n_beh=3, baserates=[0, 0, 0])
         assert sum(b.beh) == 0
@@ -69,10 +71,13 @@ class TestAgent:
         # no one should be emulated because p = 0
         a.emulate_alters(agents, net, p=0)
         assert a.beh == [0, 0, 0]
+        assert a.current_emulations == 0
+        assert a.current_emulated_risk_factors == 0
 
         # only b and c should be emulated given this network arrangement
         a.emulate_alters(agents, net, p=1)
         assert all([b in [1, 2] for b in a.beh])
+        assert a.current_emulations == 3
 
     def test_spontaneously_change(self):
         a = Agent(id=1, n_beh=3)
@@ -277,6 +282,7 @@ class TestAgent:
         a = Agent(id=1, n_beh=3, baserates=None)
 
         assert a.attempts == 0
+        assert a.current_attempt == 0
 
         gen_sui_prev = 1 / 1000  # very low baserate
         beh_odds_ratios = [1000, 1000, 1000]  # very high risk factors
@@ -288,6 +294,7 @@ class TestAgent:
         )
         assert outcome == 0
         assert a.attempts == 0
+        assert a.current_attempt == 0
 
         # Attempts should happen when a has many beh risk factors
         a.beh = [1, 1, 1]
@@ -296,6 +303,7 @@ class TestAgent:
         )
         assert outcome == 1
         assert a.attempts == 1
+        assert a.current_attempt == 1
 
         # Test for increment of attempts
         outcome = a.consider_suicide(
@@ -303,3 +311,4 @@ class TestAgent:
         )
         assert outcome == 1
         assert a.attempts == 2
+        assert a.current_attempt == 1

@@ -1,0 +1,221 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+TODO: 
+  - implement recording of sui attempts on each tick for agents
+  - implement more influential mock intervention?
+  - X change id parameter of simulation to sim_id in class definition (not just data export)
+  - X remove seed from sim class and data export if it is not going to be used
+  - calculate some network statistics ahead of time?
+      - assortativity
+      - density
+      
+```{r}
+library(tidyverse)
+
+df <- expand.grid(samp = 1:100, net_size = 3:35, person_id = 1:35, baserate = seq(.30, .10, length.out = 10)) %>%
+  filter(person_id <= net_size) %>% 
+  mutate(beh = as.numeric(runif(n()) < baserate)) %>% 
+  group_by(samp, net_size, person_id) %>% 
+  summarise(total_beh = sum(beh)) %>% 
+  group_by(samp, net_size) %>% 
+  mutate(risk_percentile = cume_dist(total_beh))
+
+
+
+df
+```
+    
+
+
+```{r}
+library(tidyverse)
+library(dbplyr)
+
+con <- DBI::dbConnect(RSQLite::SQLite(), dbname = 'simulation/test.db')
+
+parameters_db <- tbl(con, 'parameters') %>% 
+  select(-id, -tick)
+
+agents_db <- tbl(con, 'agents') %>% 
+  rename(agent_id = id) %>% 
+  select(-seed)
+
+edges_db <- tbl(con, 'edges')
+```
+
+
+# Question 1 - what is the
+
+```{r}
+# Identify individual attempts
+agents_db <- agents_db %>% 
+  group_by(sim_id, agent_id) %>% 
+  mutate(
+    attempt = attempt_count - lag(attempt_count, default = 0)) %>% 
+  ungroup()
+
+# Partition different periods of the experiment
+agents_db <- agents_db %>% 
+  left_join(parameters_db, by = 'sim_id') %>% 
+  mutate(
+    time_period = case_when(
+        tick < 100 ~ 'burn_in',
+        100 <= tick & tick < 200 ~ 'stabalization',
+        200 <= tick & tick < 250 ~ 'baseline',
+        250 <= tick & tick < 260 ~ 'active_tx',
+        260 <= tick & tick < 310 ~ 'post_tx',
+        310 <= tick ~ 'followup'))
+```
+
+
+
+```{r}
+intervention_summary <- agents_db %>% 
+  group_by(sim_id, time_period, intv_class_name) %>% 
+  summarise(
+    attempts = sum(attempt),
+    tick = min(tick, na.rm = T),
+    n = n(),
+    ave_risk = round(50*mean(cur_risk, na.rm = T), 3)) %>% 
+  arrange(tick)
+
+intervention_summary
+```
+
+```{r}
+intervention_effects <- agents_db %>% 
+  filter(tick > 100) %>% 
+  group_by(intv_class_name, tick) %>% 
+  summarise(
+    ave_risk = round(50*mean(cur_risk), 3)) %>% 
+  ungroup() %>% 
+  as_tibble()
+
+ggplot(intervention_effects, aes(x = tick, y = ave_risk, color = intv_class_name)) +
+  geom_line()
+```
+
+
+
+```{r}
+baseline_risk <- agents_db %>% 
+  filter(time_period == 'baseline') %>% 
+  group_by(sim_id) %>% 
+  summarise(baseline_risk = mean(cur_risk))
+
+
+
+
+intervention_effects <- agents_db %>% 
+  filter(250 < tick) %>% 
+  left_join(baseline_risk, by = 'sim_id') %>% 
+  group_by(sim_id, time_period, intv_class_name) %>% 
+  summarise(rel_change = mean(cur_risk)/baseline_risk) %>% 
+  as_tibble()
+
+intervention_means <- intervention_effects %>% 
+  group_by(time_period, intv_class_name) %>% 
+  summarise(rel_change = mean(rel_change))
+
+head(intervention_effects)
+  
+ggplot(intervention_effects, aes(time_period, rel_change, color = intv_class_name)) +
+  geom_boxplot(position = position_dodge()) +
+  geom_point(data = intervention_means, size = 3, position = position_dodge()) +
+  theme_bw()
+```
+
+```{r}
+plot_df <- intervention_effects %>% 
+  left_join(baseline_risk, by = 'sim_id') %>% 
+  mutate(
+    rel_change = round(100*(ave_risk/baseline_risk - 1), 2))
+
+ggplot(plot_df, aes(tick, rel_change, color = intv_class_name)) +
+  geom_hline(yintercept = 0, color = 'grey') +
+  geom_point() + 
+  geom_smooth() +
+  theme_bw() +
+  theme(panel.grid = element_blank())
+```
+
+
+```{r}
+intv_aves <- intervention_effects %>% 
+  group_by(time_period, intv_class_name) %>% 
+  summarise(ave_risk = mean(ave_risk))
+
+ggplot(intervention_effects, aes(x = time_period, y = ave_risk, color = intv_class_name)) +
+  geom_boxplot() + 
+  scale_y_continuous(limits = c(0, .10)) +
+  geom_jitter(position = position_jitterdodge(), alpha = .250)
+```
+
+
+
+
+```{r}
+intervention_summary <- agents_db %>% 
+  group_by(sim_id, time_period, intv_class_name) %>% 
+  summarise(
+    attempts = sum(attempt),
+    tick = min(tick, na.rm = T),
+    n = n(),
+    risk = round(50*mean(cur_risk, na.rm = T), 3)) %>% 
+  arrange(tick)
+
+
+intervention_effect <- intervention_summary %>% 
+  ungroup() %>% 
+  select(tick, time_period, intv_class_name, risk) %>% 
+  pivot_wider(
+    id_cols = c(intv_class_name),
+    names_from = time_period,
+    values_from = risk) %>% 
+  as_tibble()
+
+
+intervention_effect %>% 
+  mutate(
+    active_effect = active_tx - baseline,
+    post_effect = post_tx - baseline,
+    followup_effect = followup - baseline) %>% 
+  select(intv_class_name, ends_with('effect')) %>% 
+  pivot_longer(
+    cols = ends_with('effect'),
+    names_to = 'metric',
+    values_to = 'magnitude') %>% 
+  pivot_wider(
+    names_from = 'intv_class_name',
+    values_from = 'magnitude')
+
+
+```
+
+```{r}
+plot_df <- agents_db %>% 
+  filter(tick > 0) %>% 
+  group_by(sim_id, tick, intv_class_name) %>% 
+  summarise(
+    attempts = mean(attempt, na.rm = T),
+    n = n(),
+    risk = 50*mean(cur_risk, na.rm = T)) %>% 
+  arrange(tick)
+
+plot_df
+
+ggplot(plot_df, aes(tick, risk, group = sim_id, color = intv_class_name)) +
+  geom_line(alpha = .10) +
+  scale_y_continuous(limits = c(0, .02))
+```
+
+
+```{r}
+DBI::dbDisconnect(con)
+```
+
+
+

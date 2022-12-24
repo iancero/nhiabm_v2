@@ -15,7 +15,7 @@ class TestSimulation:
         assert s.cur_tick == 0
 
         assert hasattr(s, "history")
-        assert isinstance(s.history, list)
+        assert isinstance(s.history, dict)
 
     def test_setup(self):
         params = {
@@ -52,8 +52,10 @@ class TestSimulation:
         sim = Simulation(**params)
         assert not hasattr(sim, "network")
         assert not hasattr(sim, "agents")
-        assert isinstance(sim.history, list)
-        assert not sim.history
+        assert isinstance(sim.history, dict)
+
+        for key, val in sim.history.items():
+            assert not val
 
         sim.setup()
         assert sim.network
@@ -70,7 +72,7 @@ class TestSimulation:
         assert sim.interventions[0].tar_severity == [0.40, 1]
         assert sim.interventions[1].tar_severity == [0.40, 1]
 
-        assert len(sim.history) == 1
+        assert len(sim.history["agents"]) == 1
 
     def test_tick(self):
         params = {
@@ -109,12 +111,13 @@ class TestSimulation:
 
         sim = Simulation(**params)
 
-        assert not sim.history
+        for aspect, hist in sim.history.items():
+            assert not hist
 
         sim.setup()
 
         assert sim.cur_tick == 0
-        assert len(sim.history) == 1
+        assert len(sim.history["agents"]) == 1
         for intv in sim.interventions:
             assert not intv.is_active_phase(sim.cur_tick)
             assert not intv.is_setup_phase(sim.cur_tick)
@@ -124,21 +127,21 @@ class TestSimulation:
 
         sim.tick()
         assert sim.cur_tick == 1
-        assert len(sim.history) == 2
+        assert len(sim.history["agents"]) == 2
         for intv in sim.interventions:
             assert not intv.is_active_phase(sim.cur_tick)
             assert not intv.is_setup_phase(sim.cur_tick)
 
         sim.tick()
         assert sim.cur_tick == 2
-        assert len(sim.history) == 3
+        assert len(sim.history["agents"]) == 3
         for intv in sim.interventions:
             assert intv.is_active_phase(sim.cur_tick)
             assert intv.is_setup_phase(sim.cur_tick)
 
         sim.tick()
         assert sim.cur_tick == 3
-        assert len(sim.history) == 4
+        assert len(sim.history["agents"]) == 4
         for intv in sim.interventions:
             assert not intv.is_active_phase(sim.cur_tick)
             assert not intv.is_setup_phase(sim.cur_tick)
@@ -195,13 +198,14 @@ class TestSimulation:
 
         sim = Simulation(**params)
 
-        assert not sim.history
+        for key, val in sim.history.items():
+            assert not val
 
         sim.setup()
 
-        assert len(sim.history) == 1
+        assert len(sim.history["agents"]) == 1
 
         sim.go()
 
         # number of ticks from params, plus 1 for setup
-        assert len(sim.history) == 31
+        assert len(sim.history["agents"]) == 31

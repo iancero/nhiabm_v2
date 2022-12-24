@@ -26,6 +26,7 @@ class Simulation:
             "agents": [],
             "edges": [],
             "vertices": [],
+            "network": [],
             "interventions": [],
             "parameters": [],
         }
@@ -193,11 +194,35 @@ class Simulation:
 
         return params
 
+    def network_to_dict(self):
+        d = {}
+
+        d.update({"density": self.network.density()})
+
+        # individual assortativities
+        for i in range(self.n_beh):
+            agent_behs = [a.beh[i] for a in self.agents]
+            assort = self.network.assortativity(types1=agent_behs, directed=False)
+            d.update({f"assort_beh{i}": assort})
+
+        beh_sums = [sum(a.beh) for a in self.agents]
+        d["assort_sum_beh"] = self.network.assortativity(
+            types1=beh_sums, directed=False
+        )
+
+        cur_risks = [a.current_risk for a in self.agents]
+        d["assort_cur_risk"] = self.network.assortativity(
+            types1=cur_risks, directed=False
+        )
+
+        return d
+
     def record_history(self):
 
         self.history["agents"].append(copy.deepcopy(self.agents_to_dict()))
         self.history["edges"].append(copy.deepcopy(self.edges_to_dict()))
         self.history["vertices"].append(copy.deepcopy(self.verts_to_dict()))
+        self.history["network"].append(copy.deepcopy(self.network_to_dict()))
         self.history["interventions"].append(
             copy.deepcopy(self.interventions_to_dict())
         )
@@ -253,7 +278,7 @@ class Simulation:
         self.tag_history()
 
         exportable_history = {}
-        for history_of in ["agents", "edges", "parameters"]:
+        for history_of in ["agents", "edges", "parameters", "network", "intervention"]:
             flat_history = list(chain.from_iterable(self.history[history_of]))
             exportable_history[history_of] = flat_history
 

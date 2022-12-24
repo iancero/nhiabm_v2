@@ -11,6 +11,7 @@ class Agent(object):
         self.id = id
         self.name = f"id_{id}"
         self.current_risk = 0
+        self.current_attempt = 0
         self.attempts = 0
 
         if baserates is not None:
@@ -28,6 +29,7 @@ class Agent(object):
             "beh": self.beh,
             "cur_risk": self.current_risk,
             "attempt_count": self.attempts,
+            "cur_attempt": self.current_attempt,
         }
 
         if not beh_as_list:
@@ -122,5 +124,8 @@ class Agent(object):
 
         if attempt_yn:
             self.attempts = self.attempts + 1
+            self.current_attempt = 1
+        else:
+            self.current_attempt = 0
 
         return attempt_yn

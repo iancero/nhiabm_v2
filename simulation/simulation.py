@@ -218,16 +218,27 @@ class Simulation:
 
         return d
 
+    # def record_history(self):
+
+    #     self.history["agents"].append(copy.deepcopy(self.agents_to_dict()))
+    #     self.history["edges"].append(copy.deepcopy(self.edges_to_dict()))
+    #     self.history["vertices"].append(copy.deepcopy(self.verts_to_dict()))
+    #     self.history["networks"].append(copy.deepcopy(self.network_to_dict()))
+    #     self.history["interventions"].append(
+    #         copy.deepcopy(self.interventions_to_dict())
+    #     )
+    #     self.history["parameters"].append(copy.deepcopy(self.params_to_dict()))
+
     def record_history(self):
 
-        self.history["agents"].append(copy.deepcopy(self.agents_to_dict()))
-        self.history["edges"].append(copy.deepcopy(self.edges_to_dict()))
-        self.history["vertices"].append(copy.deepcopy(self.verts_to_dict()))
-        self.history["networks"].append(copy.deepcopy(self.network_to_dict()))
-        self.history["interventions"].append(
-            copy.deepcopy(self.interventions_to_dict())
-        )
-        self.history["parameters"].append(copy.deepcopy(self.params_to_dict()))
+        self.history["agents"].append(self.agents_to_dict())
+        self.history["edges"].append(self.edges_to_dict())
+        # self.history["vertices"].append(self.verts_to_dict())
+        self.history["networks"].append(self.network_to_dict())
+        self.history["interventions"].append(self.interventions_to_dict())
+
+        if self.cur_tick <= 1:
+            self.history["parameters"].append(self.params_to_dict())
 
     def tag_history(self):
 

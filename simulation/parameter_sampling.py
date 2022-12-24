@@ -1,7 +1,6 @@
 import numpy
 import json
 from itertools import repeat
-from copy import deepcopy
 
 
 def random_values(string):
@@ -15,7 +14,7 @@ def random_values(string):
 
 def random_parameters(input_params):
 
-    randomized_params = deepcopy(input_params)
+    randomized_params = input_params.copy()
     for key, val in randomized_params.items():
 
         # choose an intervention and randomize intervention parameters

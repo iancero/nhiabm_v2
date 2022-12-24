@@ -80,7 +80,9 @@ class NetworkIntervention(Intervention):
     def intervene(self, agents, network):
         network.rewire_edges(self.p_rewire)
 
-        for agent in agents:
+        enrollees = self.enrolled_agents(agents)
+
+        for agent in enrollees:
             for i in self.tar_beh:
                 if random.random() < self.p_beh_change:
 
@@ -137,8 +139,8 @@ class IndividualIntervention(Intervention):
     def intervene(self, agents, network):
         enrollees = self.enrolled_agents(agents)
 
-        for enrollee in enrollees:
-            priority_beh = self.priority_behaviors(enrollee)
+        for agent in enrollees:
+            priority_beh = self.priority_behaviors(agent)
             treatable_beh = priority_beh[0 : self.treatable_beh]
 
             for i in treatable_beh:
@@ -146,10 +148,10 @@ class IndividualIntervention(Intervention):
 
                     # if this behavior was actually bad to start,
                     # document the improvement
-                    self.beh_changed += int(enrollee.beh[i] == 1)
+                    self.beh_changed += int(agent.beh[i] == 1)
 
                     # change the behavior to the better
-                    enrollee.beh[i] = 0
+                    agent.beh[i] = 0
 
 
 class MockInterventionA(Intervention):
@@ -166,7 +168,10 @@ class MockInterventionA(Intervention):
 
         # There is a random change that the targeted behaviors will simply
         # be shuffled for each agent
-        for agent in agents:
+
+        enrollees = self.enrolled_agents(agents)
+
+        for agent in enrollees:
             if random.random() < self.p_beh_change:
                 rep_beh = [b for i, b in enumerate(agent.beh) if i in self.tar_beh]
                 random.shuffle(rep_beh)
@@ -195,7 +200,9 @@ class MockInterventionB(Intervention):
 
         # There is a random change that the targeted behaviors will simply
         # be shuffled for each agent
-        for agent in agents:
+        enrollees = self.enrolled_agents(agents)
+
+        for agent in enrollees:
             if random.random() < self.p_beh_change:
                 rep_beh = [b for i, b in enumerate(agent.beh) if i in self.tar_beh]
                 random.shuffle(rep_beh)

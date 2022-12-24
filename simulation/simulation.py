@@ -1,10 +1,11 @@
 import copy
-import itertools
 import json
 import random
 import igraph as ig
 import sqlite3
 import pandas as pd
+
+from itertools import chain
 
 from intervention import (
     NetworkIntervention,
@@ -21,7 +22,13 @@ class Simulation:
         self.__dict__.update(kwargs)
         self.total_ticks = ticks
         self.cur_tick = 0
-        self.history = []
+        self.history = {
+            "agents": [],
+            "edges": [],
+            "vertices": [],
+            "interventions": [],
+            "parameters": [],
+        }
 
     def setup(self):
 
@@ -187,21 +194,25 @@ class Simulation:
         return params
 
     def record_history(self):
-        a = copy.deepcopy(self.agents_to_dict())
-        e = copy.deepcopy(self.edges_to_dict())
-        v = copy.deepcopy(self.verts_to_dict())
-        i = copy.deepcopy(self.interventions_to_dict())
-        p = copy.deepcopy(self.params_to_dict())
 
-        self.history.append(
-            {
-                "agents": a,
-                "edges": e,
-                "vertices": v,
-                "interventions": i,
-                "parameters": p,
-            }
+        self.history["agents"].append(copy.deepcopy(self.agents_to_dict()))
+        self.history["edges"].append(copy.deepcopy(self.edges_to_dict()))
+        self.history["vertices"].append(copy.deepcopy(self.verts_to_dict()))
+        self.history["interventions"].append(
+            copy.deepcopy(self.interventions_to_dict())
         )
+        self.history["parameters"].append(copy.deepcopy(self.params_to_dict()))
+
+    def tag_history(self):
+
+        # Go through each kind of history. Within each kind of history,
+        # tag all of the individual items with the correct tick and with the
+        # sim_id for this simulation, which can be used to uniquely identify it
+
+        for aspect in self.history:
+            for i, objs in enumerate(self.history[aspect]):
+                for obj in objs:
+                    obj.update({"tick": i, "sim_id": self.sim_id})
 
     def remaining_ticks(self):
         return self.total_ticks - self.cur_tick
@@ -230,10 +241,23 @@ class Simulation:
 
         for history_aspect in history_aspects:
             history = self.history_to_dataframe(history_aspect)
-            history["seed"] = self.seed
+            # history["seed"] = self.seed
             history["sample_num"] = self.sample_num
 
             if simplify and history_aspect == "parameters":
                 history = history.iloc[[0]]
 
             history.to_sql(history_aspect, con, if_exists="append", index=False)
+
+    def history_for_db(self, simplify=True):
+        self.tag_history()
+
+        exportable_history = {}
+        for history_of in ["agents", "edges", "parameters"]:
+            flat_history = list(chain.from_iterable(self.history[history_of]))
+            exportable_history[history_of] = flat_history
+
+        if simplify:
+            exportable_history["parameters"] = [exportable_history["parameters"][0]]
+
+        return exportable_history

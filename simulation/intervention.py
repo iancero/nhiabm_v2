@@ -52,6 +52,8 @@ class Intervention:
         return tar_beh
 
     def enrolled_agents(self, agents):
+        assert self.enrolled_names
+
         return [a for a in agents if a.name in self.enrolled_names]
 
     def as_dict(self):

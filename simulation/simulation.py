@@ -26,7 +26,7 @@ class Simulation:
             "agents": [],
             "edges": [],
             "vertices": [],
-            "network": [],
+            "networks": [],
             "interventions": [],
             "parameters": [],
         }
@@ -194,7 +194,7 @@ class Simulation:
 
         return params
 
-    def network_to_dict(self):
+    def network_to_dict(self, in_list=True):
         d = {}
 
         d.update({"density": self.network.density()})
@@ -215,6 +215,9 @@ class Simulation:
             types1=cur_risks, directed=False
         )
 
+        if in_list:
+            d = [d]
+
         return d
 
     def record_history(self):
@@ -222,7 +225,7 @@ class Simulation:
         self.history["agents"].append(copy.deepcopy(self.agents_to_dict()))
         self.history["edges"].append(copy.deepcopy(self.edges_to_dict()))
         self.history["vertices"].append(copy.deepcopy(self.verts_to_dict()))
-        self.history["network"].append(copy.deepcopy(self.network_to_dict()))
+        self.history["networks"].append(copy.deepcopy(self.network_to_dict()))
         self.history["interventions"].append(
             copy.deepcopy(self.interventions_to_dict())
         )
@@ -278,7 +281,13 @@ class Simulation:
         self.tag_history()
 
         exportable_history = {}
-        for history_of in ["agents", "edges", "parameters", "network", "intervention"]:
+        for history_of in [
+            "agents",
+            "edges",
+            "parameters",
+            "networks",
+            "interventions",
+        ]:
             flat_history = list(chain.from_iterable(self.history[history_of]))
             exportable_history[history_of] = flat_history
 
@@ -286,3 +295,9 @@ class Simulation:
             exportable_history["parameters"] = [exportable_history["parameters"][0]]
 
         return exportable_history
+
+
+if __name__ == "__main__":
+    from main import run_simulation
+
+    x = run_simulation(1)

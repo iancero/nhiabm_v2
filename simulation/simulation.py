@@ -2,8 +2,6 @@ import copy
 import json
 import random
 import igraph as ig
-import sqlite3
-import pandas as pd
 
 from itertools import chain
 
@@ -241,25 +239,6 @@ class Simulation:
             for i, objs in enumerate(self.history[aspect]):
                 for obj in objs:
                     obj.update({"tick": i, "sim_id": self.sim_id})
-
-    def remaining_ticks(self):
-        return self.total_ticks - self.cur_tick
-
-    def write_json(self, file_name):
-        with open(file_name, "w") as outfile:
-            history_json = json.dumps(self.history)
-            outfile.write(history_json)
-
-    def history_to_dataframe(self, history_of):
-        history = [h[history_of] for h in self.history]
-
-        for tick, objs in enumerate(history):
-            for obj in objs:
-                obj.update({"tick": tick})
-
-        df = pd.concat([pd.DataFrame(moment) for moment in history])
-
-        return df
 
     def history_to_db(self, con, history_of=None, simplify=True):
         if history_of is None:

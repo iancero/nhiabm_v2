@@ -31,9 +31,9 @@ if __name__ == "__main__":
     print(time.ctime())
 
     with mp.Pool(processes=8) as pool:
-        db = Database("test.db")
+        db = Database("experiments/mock_experiment/test.db")
 
-        for result in pool.imap_unordered(run_simulation, range(104)):
+        for result in pool.imap_unordered(run_simulation, range(8)):
 
             for aspect, content in result.items():
                 db[aspect].insert_all(content)

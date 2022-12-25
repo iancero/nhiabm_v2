@@ -55,12 +55,8 @@ def main():
 
     # run simulations and enter to DB asynchronously
     with mp.Pool(processes=7) as pool:
-
         for completed_sim in pool.imap_unordered(run_simulation, range(n_simulations)):
             queue.put(completed_sim)
-
-        pool.close()
-        pool.join()
 
     # finalize and close database entry queue and process
     queue.put(None)

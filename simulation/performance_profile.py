@@ -11,7 +11,7 @@ def profile_main():
     stats = pstats.Stats(pr)
     stats.sort_stats(pstats.SortKey.TIME)
     stats.print_stats()
-    stats.dump_stats("fast_main.prof")
+    stats.dump_stats("main.prof")
 
 
 if __name__ == "__main__":

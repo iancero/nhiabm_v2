@@ -1,7 +1,4 @@
-from itertools import repeat
-import random
-
-from sqlite_utils import Database
+import sqlite3
 from parameter_sampling import sample_parameter_space
 from simulation import Simulation
 import multiprocessing as mp
@@ -23,27 +20,55 @@ def run_simulation(sim_id):
 
     print(f"returning {sim_id}")
 
-    return sim.history_for_db()
+    return sim
+
+
+def simulation_to_db(queue, db_path):
+    with sqlite3.connect(db_path) as con:
+
+        # initialize database tables
+        example_sim = run_simulation(sim_id=-1)
+        example_sim.create_history_tables(con)
+        print("DB tables created (or detected)")
+
+    while True:
+        completed_sim = queue.get()
+
+        if completed_sim is None:
+            break
+
+        completed_sim.insert_history_to_db(con)
+
+        print("\tdb entry completed", completed_sim.sim_id)
 
 
 def main():
     print(time.ctime())
 
-    with mp.Pool(processes=8) as pool:
-        db = Database("experiments/mock_experiment/test.db")
+    n_simulations = 1000
 
-        for result in pool.imap_unordered(run_simulation, range(104)):
+    # initialize database entry queue and process
+    db_path = "test_1000.db"
+    queue = mp.Queue()
+    db_process = mp.Process(target=simulation_to_db, args=(queue, db_path))
+    db_process.start()
 
-            # TODO: for speed, possibly implement a stable SQLITE connection,
-            # the __exit__ method of SQLite seems to be taking a long time,
-            # from the performance profile count, it looks like sqlite is getting
-            # opened and closed each time there is an "insert_all" call from sqlite-utils
-            # its unclear, but possible.
+    # run simulations and enter to DB asynchronously
+    with mp.Pool(processes=7) as pool:
 
-            for aspect, content in result.items():
-                db[aspect].insert_all(content)
+        for completed_sim in pool.imap_unordered(run_simulation, range(n_simulations)):
+            queue.put(completed_sim)
 
-        db.close()
+        pool.close()
+        pool.join()
+
+    # finalize and close database entry queue and process
+    queue.put(None)
+
+    db_process.join()
+    db_process.close()
+
+    queue.close()
 
     print(time.ctime())
 

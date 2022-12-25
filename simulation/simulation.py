@@ -286,6 +286,44 @@ class Simulation:
 
         return exportable_history
 
+    @staticmethod
+    def db_var_types(dict_list):
+        db_mapping = {
+            "<class 'int'>": "INTEGER",
+            "<class 'numpy.int64'>": "INTEGER",
+            "<class 'str'>": "TEXT",
+            "<class 'bool'>": "INTEGER",
+            "<class 'float'>": "REAL",
+            "<class 'numpy.float64'>": "REAL",
+        }
+
+        var_types = {}
+        for key, val in dict_list.items():
+            var_type = db_mapping[str(type(val))]
+            var_types.update({key: var_type})
+
+        return var_types
+
+    def create_history_tables(self, con):
+        history = self.history_for_db()
+
+        for aspect, data in history.items():
+            var_types = ", ".join(Simulation.db_var_types(data[-1]))
+            query = f"CREATE TABLE IF NOT EXISTS {aspect}({var_types})"
+
+            with con:
+                con.execute(query)
+
+    def insert_history_to_db(self, con):
+        history = self.history_for_db()
+
+        for aspect, data in history.items():
+            colnames = ", ".join([f":{key}" for key in data[-1]])
+            query = f"INSERT INTO {aspect} VALUES({colnames})"
+
+            with con:
+                con.executemany(query, data)
+
 
 if __name__ == "__main__":
     from main import run_simulation

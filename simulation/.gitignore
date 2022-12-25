@@ -1,3 +1,6 @@
 __pycache__
 **.nb.html
 **.db
+**.prof
+performance_profile.py
+notes.txt

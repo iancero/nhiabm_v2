@@ -195,7 +195,7 @@ class Simulation:
     def network_to_dict(self, in_list=True):
         d = {}
 
-        d.update({"density": self.network.density()})
+        d.update({"density": self.network.density(), "n_agents": len(self.network.vs)})
 
         # individual assortativities
         for i in range(self.n_beh):

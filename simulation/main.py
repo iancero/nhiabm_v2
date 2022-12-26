@@ -10,7 +10,7 @@ def run_simulation(sim_id):
 
     print(f"starting {sim_id}")
 
-    param_file = "experiments/mock_experiment/mock_input_params.json"
+    param_file = "experiments/mock_input_params.json"
     params = sample_parameter_space(param_file, n_samples=1)[0]
     params.update({"sim_id": sim_id})
 
@@ -45,10 +45,10 @@ def simulation_to_db(queue, db_path):
 def main():
     print(time.ctime())
 
-    n_simulations = 1000
+    n_simulations = 100
 
     # initialize database entry queue and process
-    db_path = "test_1000.db"
+    db_path = "experiments/test_100.db"
     queue = mp.Queue()
     db_process = mp.Process(target=simulation_to_db, args=(queue, db_path))
     db_process.start()

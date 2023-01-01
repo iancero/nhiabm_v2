@@ -5,7 +5,12 @@ output:
   html_notebook: default
 ---
 
+
+This study compares simulated versions of network health interventions (NHIs) for suicide to traditional individual-focused interventions (INDs). The simulations are designed so that each simulated social network runs for one-half of its total run time to establish a baseline for that network, after which an NHI or IND is introduced briefly (i.e., 1 to 10 simulation-weeks/ticks) and results are then tracked for the second half of the simulation time. We make several predictions about the performance of NHIs in our simulations, which are organized into sections below. Each section includes a draft analysis that was performed on mock simulation data (i.e., data produced from simulations of two "mock" interventions).
+
 # Import mock database
+
+We begin by importing the simulated data.
 
 ```{r}
 library(tidyverse) 
@@ -17,8 +22,7 @@ networks_db <- tbl(con, 'networks')
 parameters_db <- tbl(con, 'parameters')
 ```
 
-
-## Tag different stages of the simulation
+We then tag the different phases of each simulation for subsequent analysis.
 
 ```{r}
 networks_db <- networks_db %>% 
@@ -102,6 +106,17 @@ ggplot(plot_df, aes(x = tick, y = density, color = factor(sim_id))) +
   theme_bw() +
   theme(legend.position = 'none')
 ```
+
+
+# Planned analyses
+
+## 1. Group-level suicide prevention effectiveness:
+
+    a. Both IND- and NHI- treated groups will produce reductions in (i) average suicide risk level and (ii) reductions in the rate of observed suicide attempts, compared to baseline.
+    b. During active intervention time, IND-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than NHI-treated groups.
+    c. However, in the simulation-year after intervention has concluded, NHI-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than IND-treated groups.
+    d. Both IND-treated groups and NHI-treated groups will revert to within 10% of baseline (i) average suicide risk levels and (ii) suicide attempt rates by two simulation-years after their conclusion.
+
 
 # Plot change in risk levels
 
@@ -321,8 +336,96 @@ DBI::dbDisconnect(con)
 
 
 
+## 2. NHI-effectiveness moderators
 
+```{r}
+x <- agents_db %>% 
+  filter(sim_id %in% 1:25) %>% 
+  as_tibble()
+```
 
+2a. Agents with fewer ties at baseline (including isolates) will demonstrate greater improvement after NHI treatment, as measured by the increase in their total degree and decrease in their suicide risk (compared to their baseline scores).
 
+```{r}
+risk_change_df <- agents_db %>% 
+  filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>% 
+  group_by(sim_id, id, intv_class_name, phase) %>% 
+  summarise(
+    max_tick = max(tick),
+    emulatable_alters = mean(emulatable_alters),
+    cur_risk = mean(cur_risk)) %>% 
+  as_tibble()  %>% 
+  group_by(sim_id, id) %>% 
+  arrange(sim_id, id, max_tick) %>% 
+  mutate(
+    baseline_alters = emulatable_alters[1],
+    alter_change = emulatable_alters - emulatable_alters[1],
+    risk_change = cur_risk - cur_risk[1]) %>% 
+  filter(phase != 'baseline')
 
+ggplot(risk_change_df, aes(baseline_alters, y = risk_change, color = intv_class_name)) +
+  facet_grid(phase ~ intv_class_name) +
+  geom_point(alpha = .01) +
+  geom_smooth(method = 'lm', se = F) +
+  scale_y_continuous(limits = c(-.005, .005))
+
+ggplot(risk_change_df, aes(baseline_alters, y = alter_change, color = intv_class_name)) +
+  facet_grid(phase ~ intv_class_name) +
+  geom_point(alpha = .01) +
+  geom_smooth(method = 'lm', se = F)
+```
+
+b. Groups with higher average suicide risk scores at baseline, will demonstrate greater improvements after NHI treatment, as measured by increased edge density and decreased average suicide risk.
+
+```{r}
+group_imp_df <- agents_db %>% 
+  filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>% 
+  group_by(sim_id, intv_class_name, phase) %>% 
+  summarise(
+    max_tick = max(tick),
+    cur_risk = mean(cur_risk),
+    n_edges = mean(emulatable_alters)/2) %>% 
+  as_tibble() %>% 
+  arrange(sim_id, max_tick) %>% 
+  group_by(sim_id) %>% 
+  mutate(
+    baseline_risk = cur_risk[1],
+    risk_change = cur_risk - cur_risk[1],
+    edge_change = n_edges - n_edges[1]) %>% 
+  ungroup() %>% 
+  filter(phase != 'baseline')
+
+ggplot(group_imp_df, aes(baseline_risk, y = risk_change, color = intv_class_name)) +
+  facet_grid(phase ~ intv_class_name) +
+  geom_point(alpha = .05) +
+  geom_smooth(method = 'lm', se = F) +
+  scale_y_continuous(limits = c(-.005, .005))
+
+ggplot(group_imp_df, aes(baseline_risk, y = edge_change, color = intv_class_name)) +
+  facet_grid(phase ~ intv_class_name) +
+  geom_point(alpha = .05) +
+  geom_smooth(method = 'lm', se = F)
+```
+
+## 3. Exploratory
+
+3a. Among agents not enrolled in an intervention, NHIs will produce greater benefits than INDs, as measured by suicide attempt risk and post-intervention suicide attempts.
+
+```{r}
+risk_change_df <- agents_db %>% 
+  filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>% 
+  group_by(sim_id, id, intv_class_name, phase, enrolled) %>% 
+  summarise(
+    max_tick = max(tick),
+    cur_risk = mean(cur_risk),
+    cur_attempts = sum(cur_attempt)) %>% 
+  as_tibble() %>% 
+  ungroup() %>% 
+  filter(phase != 'baseline') 
+
+ggplot(risk_change_df, aes(x = phase, y = cur_risk, color = factor(enrolled))) +
+  facet_grid(. ~ intv_class_name) +
+  geom_boxplot() +
+  scale_y_continuous(limits = c(0, .005))
+```
 

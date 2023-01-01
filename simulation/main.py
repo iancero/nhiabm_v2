@@ -39,16 +39,16 @@ def simulation_to_db(queue, db_path):
 
         completed_sim.insert_history_to_db(con)
 
-        print("\tdb entry completed", completed_sim.sim_id)
+        print("\tdb entry completed", completed_sim.sim_id, flush=True)
 
 
 def main():
     print(time.ctime())
 
-    n_simulations = 100
+    n_simulations = 1000
 
     # initialize database entry queue and process
-    db_path = "experiments/test_100.db"
+    db_path = "experiments/mock_results.db"
     queue = mp.Queue()
     db_process = mp.Process(target=simulation_to_db, args=(queue, db_path))
     db_process.start()

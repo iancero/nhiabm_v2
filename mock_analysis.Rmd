@@ -1,10 +1,11 @@
 ---
-title: "R Notebook"
+title: "Pre-registration of mock analysis"
+subtitle: "A computational model of network health interventions for suicide"
+author: "Ian Cero & Peter Wyman"
+date: "2023-01-01"
 output:
   pdf_document: default
-  html_notebook: default
 ---
-
 
 This study compares simulated versions of network health interventions (NHIs) for suicide to traditional individual-focused interventions (INDs). The simulations are designed so that each simulated social network runs for one-half of its total run time to establish a baseline for that network, after which an NHI or IND is introduced briefly (i.e., 1 to 10 simulation-weeks/ticks) and results are then tracked for the second half of the simulation time. We make several predictions about the performance of NHIs in our simulations, which are organized into sections below. Each section includes a draft analysis that was performed on mock simulation data (i.e., data produced from simulations of two "mock" interventions).
 
@@ -15,6 +16,7 @@ We begin by importing the simulated data.
 ```{r}
 library(tidyverse) 
 library(dbplyr)
+library(patchwork)
 
 con <- DBI::dbConnect(RSQLite::SQLite(), dbname = 'simulation/experiments/mock_results.db')
 agents_db <- tbl(con, 'agents')
@@ -41,9 +43,7 @@ networks_db <- networks_db %>%
       n_agents < 15 ~ '04-14',
       n_agents %in% 15:24 ~ '15-24',
       n_agents %in% 25:35 ~ '25-35'))
-```
 
-```{r}
 agents_db <- agents_db %>% 
   left_join(
     y = parameters_db %>% 
@@ -67,7 +67,9 @@ agents_db <- agents_db %>%
 ```
 
 
-# Check pre-intervention density
+# Planned simulation checks
+
+Ensure that network densities are stable by the end of burn-in period.
 
 ```{r}
 quantile_df <- networks_db %>% 
@@ -110,15 +112,21 @@ ggplot(plot_df, aes(x = tick, y = density, color = factor(sim_id))) +
 
 # Planned analyses
 
+What follows are drafts of the analyses which are planned for the primary interventions under consideration, which are conducted on mock interventions. This was done to remove as many bugs and ad hoc decision points before the real interventions are ever simulated.
+
 ## 1. Group-level suicide prevention effectiveness:
 
-    a. Both IND- and NHI- treated groups will produce reductions in (i) average suicide risk level and (ii) reductions in the rate of observed suicide attempts, compared to baseline.
-    b. During active intervention time, IND-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than NHI-treated groups.
-    c. However, in the simulation-year after intervention has concluded, NHI-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than IND-treated groups.
-    d. Both IND-treated groups and NHI-treated groups will revert to within 10% of baseline (i) average suicide risk levels and (ii) suicide attempt rates by two simulation-years after their conclusion.
+The following are the primary hypotheses of the study. They will be analyzed from multiple perspectives, which are sketched below on mock simulation data.
+
+a. Both IND- and NHI- treated groups will produce reductions in (i) average suicide risk level and (ii) reductions in the rate of observed suicide attempts, compared to baseline.
+
+b. During active intervention time, IND-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than NHI-treated groups.
+c. However, in the simulation-year after intervention has concluded, NHI-treated groups will have (i) lower average suicide risk levels and (ii) greater reductions in the rate of observed suicide attempts than IND-treated groups.
+
+d. Both IND-treated groups and NHI-treated groups will revert to within 10% of baseline (i) average suicide risk levels and (ii) suicide attempt rates by two simulation-years after their conclusion.
 
 
-# Plot change in risk levels
+### Plot change in risk levels
 
 ```{r}
 risk_plot_df <- agents_db %>% 
@@ -132,11 +140,6 @@ risk_plot_df <- agents_db %>%
       levels = c('baseline', 'active', 'post', 'followup'), 
       ordered = T))
 
-risk_plot_df
-```
-
-
-```{r}
 risk_plot_means <- risk_plot_df %>% 
   group_by(phase, intv_class_name) %>% 
   summarise(cur_risk = mean(cur_risk))
@@ -164,11 +167,12 @@ risk_boxplot <- ggplot(
     legend.position = 'bottom',
     axis.title.x = element_blank(),
     legend.title = element_blank(),
-    legend.text = element_text(size=8)
-  )
+    legend.text = element_text(size=8))
 
 risk_boxplot
 ```
+
+Plot relative change in risk levels after baseline.
 
 ```{r}
 risk_improvement_df <- risk_plot_df %>% 
@@ -220,9 +224,9 @@ risk_imp_plot <- ggplot(
 risk_imp_plot
 ```
 
-```{r}
-library(patchwork)
+Create combined risk change plot.
 
+```{r}
 risk_plot <- (risk_boxplot + risk_imp_plot)
 
 risk_plot
@@ -231,13 +235,6 @@ risk_plot
 # Plot attempts observed in each condition
 
 ```{r}
-networks_db %>% 
-  group_by(sim_id) %>% 
-  filter(tick == 0) %>% 
-  ungroup() %>% 
-  summarise(n_agents = sum(n_agents))
-
-
 attempt_count1 <- agents_db %>% 
   filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>% 
   group_by(phase, sim_id, intv_class_name) %>% 
@@ -249,10 +246,6 @@ attempt_count1 <- agents_db %>%
       levels = c('baseline', 'active', 'post', 'followup'), 
       ordered = T))
 
-attempt_count1
-```
-
-```{r}
 attempt_count_plot <- ggplot(
     data = attempt_count1, 
     mapping = aes(x = phase, y = observed_attempts, fill = intv_class_name)) +
@@ -286,9 +279,7 @@ attempt_count2 <- agents_db %>%
     names_from = intv_class_name,
     values_from = cum_attempts) %>% 
   mutate(a_over_b = MockInterventionA - MockInterventionB)
-```
 
-```{r}
 attempt_count3 <- attempt_count2 %>% 
   mutate(
     winning = case_when(
@@ -323,26 +314,16 @@ cum_advantage_plot <- ggplot(attempt_count3, aes(x = tick, y = a_over_b, color =
 cum_advantage_plot
 ```
 
+Combine the attempt plots into a single figure
+
 ```{r}
 attempt_plot <- attempt_count_plot + cum_advantage_plot
 
 attempt_plot
 ```
 
-```{r}
-DBI::dbDisconnect(con)
-```
-
-
-
 
 ## 2. NHI-effectiveness moderators
-
-```{r}
-x <- agents_db %>% 
-  filter(sim_id %in% 1:25) %>% 
-  as_tibble()
-```
 
 2a. Agents with fewer ties at baseline (including isolates) will demonstrate greater improvement after NHI treatment, as measured by the increase in their total degree and decrease in their suicide risk (compared to their baseline scores).
 
@@ -428,4 +409,12 @@ ggplot(risk_change_df, aes(x = phase, y = cur_risk, color = factor(enrolled))) +
   geom_boxplot() +
   scale_y_continuous(limits = c(0, .005))
 ```
+
+Disconnect from database
+
+```{r}
+DBI::dbDisconnect(con)
+```
+
+
 

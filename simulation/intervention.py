@@ -80,6 +80,11 @@ class NetworkIntervention(Intervention):
             agent.enrolled = True
 
     def intervene(self, agents, network):
+
+        # TODO: per Peter's advice, change this to adding random edges, rather
+        # than rewiring old ones. This more realistically mirrors what the
+        # intervention would be doing in the real world, even in a sparsely populated
+        # network with fewer edges to reassign (i.e., they would just get made).
         network.rewire_edges(self.p_rewire)
 
         enrollees = self.enrolled_agents(agents)

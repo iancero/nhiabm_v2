@@ -168,15 +168,15 @@ class MockInterventionA(Intervention):
 
     def intervene(self, agents, network):
 
-        # Each enrollee has a chance for their total beh to become proportional
-        # to their degree. Fewer alters means GREATER total beh
+        # Each enrollee has a chance to become completely risk free
         enrollees = self.enrolled_agents(agents)
 
         for agent in enrollees:
             old_total = sum(agent.beh)
 
             if random.random() < self.p_beh_change:
-                agent.beh = ([1] * 2) + ([0] * (len(agent.beh) - 2))
+                # agent.beh = ([1] * 2) + ([0] * (len(agent.beh) - 2))
+                agent.beh = [0] * len(agent.beh)
 
                 random.shuffle(agent.beh)
 
@@ -196,8 +196,8 @@ class MockInterventionB(Intervention):
 
     def intervene(self, agents, network):
 
-        # Each enrollee has a chance for their total beh to become proportional
-        # to their degree. Fewer alters means GREATER total beh
+        # Each enrollee has a chance for their risk to become the population
+        # average
         enrollees = self.enrolled_agents(agents)
 
         for agent in enrollees:

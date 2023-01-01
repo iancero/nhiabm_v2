@@ -3,219 +3,324 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-TODO: 
-  - implement recording of sui attempts on each tick for agents
-  - implement more influential mock intervention?
-  - X change id parameter of simulation to sim_id in class definition (not just data export)
-  - X remove seed from sim class and data export if it is not going to be used
-  - calculate some network statistics ahead of time?
-      - assortativity
-      - density
-      
-```{r}
-library(tidyverse)
-
-df <- expand.grid(samp = 1:100, net_size = 3:35, person_id = 1:35, baserate = seq(.30, .10, length.out = 10)) %>%
-  filter(person_id <= net_size) %>% 
-  mutate(beh = as.numeric(runif(n()) < baserate)) %>% 
-  group_by(samp, net_size, person_id) %>% 
-  summarise(total_beh = sum(beh)) %>% 
-  group_by(samp, net_size) %>% 
-  mutate(risk_percentile = cume_dist(total_beh))
-
-
-
-df
-```
-    
-
+# Import mock database
 
 ```{r}
-library(tidyverse)
+library(tidyverse) 
 library(dbplyr)
 
-con <- DBI::dbConnect(RSQLite::SQLite(), dbname = 'simulation/test.db')
-
-parameters_db <- tbl(con, 'parameters') %>% 
-  select(-id, -tick)
-
-agents_db <- tbl(con, 'agents') %>% 
-  rename(agent_id = id) %>% 
-  select(-seed)
-
-edges_db <- tbl(con, 'edges')
+con <- DBI::dbConnect(RSQLite::SQLite(), dbname = 'simulation/experiments/mock_results.db')
+agents_db <- tbl(con, 'agents')
+networks_db <- tbl(con, 'networks') 
+parameters_db <- tbl(con, 'parameters')
 ```
 
 
-# Question 1 - what is the
+## Tag different stages of the simulation
 
 ```{r}
-# Identify individual attempts
+networks_db <- networks_db %>% 
+  left_join(
+    y = parameters_db %>% 
+      select(sim_id, intv_class_name),
+    by = 'sim_id') %>%
+  mutate(
+    phase = case_when(
+      tick < 300 ~ 'burn_in',
+      tick %in% 300:349 ~ 'baseline',
+      tick %in% 350:359 ~ 'active',
+      tick %in% 360:409 ~ 'post',
+      tick %in% 410:470 ~ 'followup'),
+    group_size = case_when(
+      n_agents < 15 ~ '04-14',
+      n_agents %in% 15:24 ~ '15-24',
+      n_agents %in% 25:35 ~ '25-35'))
+```
+
+```{r}
 agents_db <- agents_db %>% 
-  group_by(sim_id, agent_id) %>% 
+  left_join(
+    y = parameters_db %>% 
+      select(sim_id, intv_class_name),
+    by = 'sim_id') %>% 
+  left_join(
+    y = networks_db %>% 
+      select(sim_id, tick, n_agents),
+    by = c('sim_id', 'tick')) %>% 
   mutate(
-    attempt = attempt_count - lag(attempt_count, default = 0)) %>% 
-  ungroup()
-
-# Partition different periods of the experiment
-agents_db <- agents_db %>% 
-  left_join(parameters_db, by = 'sim_id') %>% 
-  mutate(
-    time_period = case_when(
-        tick < 100 ~ 'burn_in',
-        100 <= tick & tick < 200 ~ 'stabalization',
-        200 <= tick & tick < 250 ~ 'baseline',
-        250 <= tick & tick < 260 ~ 'active_tx',
-        260 <= tick & tick < 310 ~ 'post_tx',
-        310 <= tick ~ 'followup'))
+    phase = case_when(
+      tick < 250 ~ 'burn_in',
+      tick %in% 250:349 ~ 'baseline',
+      tick %in% 350:359 ~ 'active',
+      tick %in% 360:409 ~ 'post',
+      tick %in% 410:470 ~ 'followup'),
+    group_size = case_when(
+      n_agents < 15 ~ '04-14',
+      n_agents %in% 15:24 ~ '15-24',
+      n_agents %in% 25:35 ~ '25-35'))
 ```
 
 
+# Check pre-intervention density
 
 ```{r}
-intervention_summary <- agents_db %>% 
-  group_by(sim_id, time_period, intv_class_name) %>% 
+quantile_df <- networks_db %>% 
+  filter(tick > 250) %>% 
+  as_tibble() %>% 
+  group_by(intv_class_name, group_size) %>% 
   summarise(
-    attempts = sum(attempt),
-    tick = min(tick, na.rm = T),
-    n = n(),
-    ave_risk = round(50*mean(cur_risk, na.rm = T), 3)) %>% 
-  arrange(tick)
+    q10 = quantile(density, probs = .10),
+    mean = mean(density, na.rm = T),
+    q90 = quantile(density, probs = .90))
 
-intervention_summary
-```
+plot_df <- networks_db %>% 
+  filter(tick < 350)
 
-```{r}
-intervention_effects <- agents_db %>% 
-  filter(tick > 100) %>% 
-  group_by(intv_class_name, tick) %>% 
-  summarise(
-    ave_risk = round(50*mean(cur_risk), 3)) %>% 
-  ungroup() %>% 
-  as_tibble()
-
-ggplot(intervention_effects, aes(x = tick, y = ave_risk, color = intv_class_name)) +
-  geom_line()
-```
-
-
-
-```{r}
-baseline_risk <- agents_db %>% 
-  filter(time_period == 'baseline') %>% 
-  group_by(sim_id) %>% 
-  summarise(baseline_risk = mean(cur_risk))
-
-
-
-
-intervention_effects <- agents_db %>% 
-  filter(250 < tick) %>% 
-  left_join(baseline_risk, by = 'sim_id') %>% 
-  group_by(sim_id, time_period, intv_class_name) %>% 
-  summarise(rel_change = mean(cur_risk)/baseline_risk) %>% 
-  as_tibble()
-
-intervention_means <- intervention_effects %>% 
-  group_by(time_period, intv_class_name) %>% 
-  summarise(rel_change = mean(rel_change))
-
-head(intervention_effects)
-  
-ggplot(intervention_effects, aes(time_period, rel_change, color = intv_class_name)) +
-  geom_boxplot(position = position_dodge()) +
-  geom_point(data = intervention_means, size = 3, position = position_dodge()) +
-  theme_bw()
-```
-
-```{r}
-plot_df <- intervention_effects %>% 
-  left_join(baseline_risk, by = 'sim_id') %>% 
-  mutate(
-    rel_change = round(100*(ave_risk/baseline_risk - 1), 2))
-
-ggplot(plot_df, aes(tick, rel_change, color = intv_class_name)) +
-  geom_hline(yintercept = 0, color = 'grey') +
-  geom_point() + 
-  geom_smooth() +
+ggplot(plot_df, aes(x = tick, y = density, color = factor(sim_id))) + 
+  facet_grid(group_size ~ intv_class_name) +
+  geom_line(alpha = .25) +
+  geom_vline(xintercept = 300, linetype = 1, color = 'grey20') +
+  # geom_vline(xintercept = 350, linetype = 1, color = 'grey20') +
+  # geom_vline(xintercept = 360, linetype = 1, color = 'grey20') +
+  # geom_vline(xintercept = 410, linetype = 1, color = 'grey20') +
+  geom_hline(data = quantile_df, mapping = aes(yintercept = q10), linetype = 2) +
+  geom_hline(data = quantile_df, mapping = aes(yintercept = q90), linetype = 2) +
+  geom_hline(data = quantile_df, mapping = aes(yintercept = mean), color = 'blue') +
+  annotate('text', x = 125, y = .60, label = 'burn-in', angle = 90, size = 2) +
+  annotate('text', x = 325, y = .60, label = 'baseline', angle = 90, size = 2) +
+  # annotate('text', x = 355, y = .60, label = 'active tx', angle = 90, size = 2) +
+  # annotate('text', x = 385, y = .60, label = 'post tx', angle = 90, size = 2) +
+  # annotate('text', x = 460, y = .60, label = 'follow-up', angle = 90, size = 2) +
+  labs(
+    title = 'Pre-intervention network density by intervention and network size', 
+    caption = 'Dashed lines represent inner 80% of scores',
+    y = 'Density',
+    x = 'Tick'
+    ) +
   theme_bw() +
-  theme(panel.grid = element_blank())
+  theme(legend.position = 'none')
 ```
 
+# Plot change in risk levels
 
 ```{r}
-intv_aves <- intervention_effects %>% 
-  group_by(time_period, intv_class_name) %>% 
-  summarise(ave_risk = mean(ave_risk))
-
-ggplot(intervention_effects, aes(x = time_period, y = ave_risk, color = intv_class_name)) +
-  geom_boxplot() + 
-  scale_y_continuous(limits = c(0, .10)) +
-  geom_jitter(position = position_jitterdodge(), alpha = .250)
-```
-
-
-
-
-```{r}
-intervention_summary <- agents_db %>% 
-  group_by(sim_id, time_period, intv_class_name) %>% 
-  summarise(
-    attempts = sum(attempt),
-    tick = min(tick, na.rm = T),
-    n = n(),
-    risk = round(50*mean(cur_risk, na.rm = T), 3)) %>% 
-  arrange(tick)
-
-
-intervention_effect <- intervention_summary %>% 
-  ungroup() %>% 
-  select(tick, time_period, intv_class_name, risk) %>% 
-  pivot_wider(
-    id_cols = c(intv_class_name),
-    names_from = time_period,
-    values_from = risk) %>% 
-  as_tibble()
-
-
-intervention_effect %>% 
+risk_plot_df <- agents_db %>% 
+  filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>%
+  group_by(sim_id, phase, intv_class_name) %>% 
+  summarise(cur_risk = mean(50*cur_risk, na.rm = T)) %>% 
+  as_tibble() %>% 
   mutate(
-    active_effect = active_tx - baseline,
-    post_effect = post_tx - baseline,
-    followup_effect = followup - baseline) %>% 
-  select(intv_class_name, ends_with('effect')) %>% 
-  pivot_longer(
-    cols = ends_with('effect'),
-    names_to = 'metric',
-    values_to = 'magnitude') %>% 
-  pivot_wider(
-    names_from = 'intv_class_name',
-    values_from = 'magnitude')
+    phase = factor(
+      x = phase, 
+      levels = c('baseline', 'active', 'post', 'followup'), 
+      ordered = T))
+
+risk_plot_df
+```
 
 
+```{r}
+risk_plot_means <- risk_plot_df %>% 
+  group_by(phase, intv_class_name) %>% 
+  summarise(cur_risk = mean(cur_risk))
+
+risk_boxplot <- ggplot(
+    data = risk_plot_df, 
+    mapping = aes(x = phase, y = cur_risk, fill = intv_class_name)) +
+  geom_boxplot(notch = T) +
+  geom_point(
+    data = risk_plot_means, 
+    position = position_dodge2(width = .750),
+    color = 'black',
+    shape = 18,
+    size = 3) +
+  scale_y_continuous(
+    limits = c(0, .20),
+    labels = function(y) paste0(100*y, '%')) +
+  labs(
+    title = 'A',
+    x = 'Simulation Phase',
+    y = 'Mean attempt risk (annualized)'
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = 'bottom',
+    axis.title.x = element_blank(),
+    legend.title = element_blank(),
+    legend.text = element_text(size=8)
+  )
+
+risk_boxplot
 ```
 
 ```{r}
-plot_df <- agents_db %>% 
-  filter(tick > 0) %>% 
-  group_by(sim_id, tick, intv_class_name) %>% 
-  summarise(
-    attempts = mean(attempt, na.rm = T),
-    n = n(),
-    risk = 50*mean(cur_risk, na.rm = T)) %>% 
-  arrange(tick)
+risk_improvement_df <- risk_plot_df %>% 
+  group_by(sim_id) %>% 
+  mutate(
+    baseline_risk = cur_risk[which(phase == 'baseline')],
+    rel_change = cur_risk/baseline_risk - 1) 
 
-plot_df
+risk_improvement_means <- risk_improvement_df %>%
+  group_by(phase, intv_class_name) %>% 
+  summarise(rel_change = mean(rel_change, na.rm = T)) %>% 
+  ungroup() %>% 
+  mutate(
+    change_label = ifelse(phase != 'baseline', paste0(round(100*rel_change), '%'), NA),
+    change_label = ifelse(rel_change > 0, paste0('+', change_label), change_label))
 
-ggplot(plot_df, aes(tick, risk, group = sim_id, color = intv_class_name)) +
-  geom_line(alpha = .10) +
-  scale_y_continuous(limits = c(0, .02))
+risk_imp_plot <- ggplot(
+  data = risk_improvement_df, 
+  mapping = aes(
+    x = as.numeric(phase), 
+    y = rel_change, 
+    color = intv_class_name)) +
+  geom_line(alpha = .05, mapping = aes(group = sim_id)) +
+  # geom_jitter(alpha = .05, mapping = aes(group = sim_id), position = position_dodge2(width = .30)) +
+  geom_point(data = risk_improvement_means, size = 3) +
+  geom_line(data = risk_improvement_means, size = 1.5) +
+  geom_text(
+    data = risk_improvement_means, 
+    mapping = aes(label = change_label), 
+    nudge_y = -.1, 
+    check_overlap = T,
+    color = 'black') +
+  scale_x_continuous(breaks = 1:4, labels = c('baseline', 'active', 'post', 'followup')) +
+  scale_y_continuous(
+    limits = c(-1, 1),
+    labels = function(y) paste0(100*y, '%')) +
+  labs(
+    title = 'B',
+    x = 'Simulation Phase',
+    y = 'Mean % change from baseline') +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = 'bottom',
+    legend.title = element_blank(),
+    legend.text = element_text(size=8)
+  )
+
+risk_imp_plot
 ```
 
+```{r}
+library(patchwork)
+
+risk_plot <- (risk_boxplot + risk_imp_plot)
+
+risk_plot
+```
+
+# Plot attempts observed in each condition
+
+```{r}
+networks_db %>% 
+  group_by(sim_id) %>% 
+  filter(tick == 0) %>% 
+  ungroup() %>% 
+  summarise(n_agents = sum(n_agents))
+
+
+attempt_count1 <- agents_db %>% 
+  filter(phase %in% c('baseline', 'active', 'post', 'followup')) %>% 
+  group_by(phase, sim_id, intv_class_name) %>% 
+  summarise(observed_attempts = sum(cur_attempt)) %>% 
+  as_tibble() %>% 
+  mutate(
+    phase = factor(
+      x = phase, 
+      levels = c('baseline', 'active', 'post', 'followup'), 
+      ordered = T))
+
+attempt_count1
+```
+
+```{r}
+attempt_count_plot <- ggplot(
+    data = attempt_count1, 
+    mapping = aes(x = phase, y = observed_attempts, fill = intv_class_name)) +
+  geom_bar(stat = 'summary', fun = 'sum', position = position_dodge2()) +
+  labs(
+    title = 'A',
+    y = 'Total attempts') +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = 'bottom',
+    legend.title = element_blank(),
+    legend.text = element_text(size=8))
+
+attempt_count_plot
+```
+
+```{r}
+attempt_count2 <- agents_db %>% 
+  filter(phase %in% c('active', 'post', 'followup')) %>% 
+  group_by(intv_class_name, tick) %>% 
+  summarise(attempts = sum(cur_attempt)) %>%
+  ungroup() %>% 
+  as_tibble() %>% 
+  group_by(intv_class_name) %>% 
+  arrange(tick) %>% 
+  mutate(cum_attempts = cumsum(attempts)) %>% 
+  ungroup() %>% 
+  pivot_wider(
+    id_cols = tick,
+    names_from = intv_class_name,
+    values_from = cum_attempts) %>% 
+  mutate(a_over_b = MockInterventionA - MockInterventionB)
+```
+
+```{r}
+attempt_count3 <- attempt_count2 %>% 
+  mutate(
+    winning = case_when(
+      tick < 350 ~ NA_character_,
+      a_over_b < 0 ~ 'MockInterventionA',
+      TRUE ~ 'MockInterventionB'))
+
+cum_advantage_plot <- ggplot(attempt_count3, aes(x = tick, y = a_over_b, color = winning)) +
+  geom_hline(yintercept = 0, color = 'grey20') +
+  annotate(geom = 'text', x = 350, y = 15, label = 'Active Tx', color = 'grey30', angle = 90) +
+  geom_vline(xintercept = 360) +
+  annotate(geom = 'text', x = 385, y = 25, label = 'Post-Tx', color = 'grey30') +
+  
+  geom_vline(xintercept = 410) +
+  annotate(geom = 'text', x = 440, y = 25, label = 'Followup', color = 'grey30') +
+  geom_point() +
+  geom_segment(
+    mapping = aes(xend=tick, y = 0, yend=a_over_b, color=winning)) +
+
+  labs(
+    title = 'B',
+    color = 'Superior intervention',
+    y = 'Difference in suicide attempts') +
+  theme_minimal() +
+  theme(
+    axis.title.x = element_blank(),
+    legend.position = 'bottom',
+    legend.title = element_text(size = 8),
+    legend.text = element_text(size=8))
+  
+  
+cum_advantage_plot
+```
+
+```{r}
+attempt_plot <- attempt_count_plot + cum_advantage_plot
+
+attempt_plot
+```
 
 ```{r}
 DBI::dbDisconnect(con)
 ```
+
+
+
+
+
+
 
 
 

@@ -133,7 +133,7 @@ class Simulation:
         return True
 
     def agents_to_dict(self):
-        agent_dicts = [a.as_dict() for a in self.agents]
+        agent_dicts = [a.as_dict(self.agents, self.network) for a in self.agents]
 
         return agent_dicts
 
@@ -195,7 +195,14 @@ class Simulation:
     def network_to_dict(self, in_list=True):
         d = {}
 
-        d.update({"density": self.network.density(), "n_agents": len(self.network.vs)})
+        d.update(
+            {
+                "density": self.network.density(),
+                "n_agents": len(self.network.vs),
+                "n_edges": len(self.network.es),
+                "n_isolates": len([v for v in self.network.vs if v.degree() == 0]),
+            }
+        )
 
         # individual assortativities
         for i in range(self.n_beh):

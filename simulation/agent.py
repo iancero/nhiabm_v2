@@ -30,7 +30,7 @@ class Agent(object):
     def __str__(self) -> str:
         return f"{self.name}: {'-'.join([str(b) for b in self.beh])}"
 
-    def as_dict(self, beh_as_list=False) -> dict:
+    def as_dict(self, agents=None, network=None, beh_as_list=False) -> dict:
         dic = {
             "id": self.id,
             "name": self.name,
@@ -47,6 +47,15 @@ class Agent(object):
             "pruned_alters": self.pruned_alters,
             "enrolled": self.enrolled,
         }
+
+        if (agents is not None) and (network is not None):
+            if self.alters(agents, network):
+                mean_sim = mean(
+                    [self.similarity(a) for a in self.alters(agents, network)]
+                )
+            else:
+                mean_sim = None
+            dic.update({"mean_similarity": mean_sim})
 
         if not beh_as_list:
             for i, beh in enumerate(dic.pop("beh")):

@@ -1,5 +1,6 @@
 from math import ceil
 import random
+import igraph as ig
 
 
 class Intervention:
@@ -79,17 +80,31 @@ class NetworkIntervention(Intervention):
         for agent in enrolled_agents:
             agent.enrolled = True
 
+    def add_random_edges(self, network):
+
+        # generate a random graph for enrolled verts with edge density = p_rewire
+        n_verts = len(self.enrolled_names)
+        random_graph = ig.Graph.Erdos_Renyi(n=n_verts, p=self.p_rewire)
+        for i, vert in enumerate(random_graph.vs):
+            vert["name"] = self.enrolled_names[i]
+
+        # add the edges from the random network to the existing network
+        random_edges = []
+        for edge in random_graph.es:
+            edge_tuple = (edge.source_vertex["name"], edge.target_vertex["name"])
+            random_edges.append(edge_tuple)
+
+        network.add_edges(random_edges)
+
+        # remove any loops and multiple edges
+        network.simplify()
+
+        return network
+
     def intervene(self, agents, network):
+        network = self.add_random_edges(network)
 
-        # TODO: per Peter's advice, change this to adding random edges, rather
-        # than rewiring old ones. This more realistically mirrors what the
-        # intervention would be doing in the real world, even in a sparsely populated
-        # network with fewer edges to reassign (i.e., they would just get made).
-        network.rewire_edges(self.p_rewire)
-
-        enrollees = self.enrolled_agents(agents)
-
-        for agent in enrollees:
+        for agent in self.enrolled_agents(agents):
             for i in self.tar_beh:
                 if random.random() < self.p_beh_change:
 

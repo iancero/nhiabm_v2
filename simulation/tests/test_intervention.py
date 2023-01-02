@@ -197,6 +197,71 @@ class TestNetworkIntervention:
         # Should enroll about 50% of the 100 agents
         assert (25 < len(intv.enrolled_names)) & (len(intv.enrolled_names) < 75)
 
+    def test_add_random_edges(self):
+        network = ig.Graph.Erdos_Renyi(n=20, p=0.50)
+
+        # Agents
+        agents = []
+        for i, v in enumerate(network.vs):
+            agent = Agent(id=i, n_beh=32)
+
+            # Vertex and agent must have same name
+            v["name"] = agent.name
+
+            agents.append(agent)
+
+        # Intervention
+        intv_params = {
+            "intv_class_name": "NetworkIntervention",
+            "start_tick": 5,
+            "duration": 3,
+            "tar_severity": [0.50, 0.75],
+            "p_rewire": 0.25,
+            "p_enrolled": 0.50,
+            "p_beh_change": 0.50,
+        }
+
+        intv = NetworkIntervention(**intv_params)
+
+        world_params = {"sui_ORs": random.sample(range(2, 50), 32)}
+
+        intv.setup(agents=agents, network=network, **world_params)
+
+        old_edges = []
+        for edge in network.es:
+            edge_tuple = (edge.source_vertex["name"], edge.target_vertex["name"])
+            old_edges.append(edge_tuple)
+
+        assert old_edges
+        assert not all([v["name"] in intv.enrolled_names for v in network.vs])
+
+        intv.add_random_edges(network)
+
+        final_edges = []
+        new_edges = []
+        for edge in network.es:
+            edge_tuple = (edge.source_vertex["name"], edge.target_vertex["name"])
+            edge_tuple_rev = (edge_tuple[1], edge_tuple[0])
+
+            if (not edge_tuple in old_edges) and (not edge_tuple_rev in old_edges):
+                new_edges.append(edge_tuple)
+
+            final_edges.append(edge_tuple)
+
+        assert sorted(new_edges + old_edges) == sorted(final_edges)
+
+        # no old edges are deleted
+        assert final_edges
+        assert all([old_edge in final_edges for old_edge in old_edges])
+
+        # only enrolled vertices are in the new edges
+        assert new_edges
+        assert all([e[0] in intv.enrolled_names for e in new_edges])
+        assert all([e[1] in intv.enrolled_names for e in new_edges])
+
+        # enrollment hasn't changed, some people are still unenrolled
+        assert not all([v["name"] in intv.enrolled_names for v in network.vs])
+
     def test_intervene(self):
         # Network
         network = ig.Graph.Erdos_Renyi(n=20, p=0.50)
@@ -548,7 +613,7 @@ class TestMockInterventionA:
             sum(old.beh) - sum(new.beh) for old, new in zip(old_enrolled, enrolled)
         ]
         assert any(enrolled_changes)
-        assert any([sum(a.beh) == 2 for a in enrolled])
+        assert any([sum(a.beh) == 0 for a in enrolled])
 
 
 class TestMockInterventionB:

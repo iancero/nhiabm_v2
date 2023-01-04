@@ -1,38 +1,38 @@
 {
-    "ticks": 600,
+    "ticks": 500,
     "n_agents": "numpy.random.default_rng().integers(low = 4, high = 36)",
     "n_beh": 10,
-    "sui_ORs": [1.25, 1.44, 1.64, 1.83, 2.03, 2.22, 2.42, 2.61, 2.81, 3],
-    "baserates": [0.3, 0.28, 0.26, 0.23, 0.21, 0.19, 0.17, 0.14, 0.12, 0.1],
+    "sui_ORs": "numpy.random.default_rng().uniform(low = 1.25, high = 3, size = 10)",
+    "baserates": "numpy.random.default_rng().uniform(low = .10, high = .30, size = 10)",
     "p_edge": "numpy.random.default_rng().beta(a = 5, b = 4, size = 1)[0]",
-    "p_spon_change": "numpy.random.default_rng().beta(a = 1, b = 9, size = 1)[0]",
-    "p_emul": "numpy.random.default_rng().beta(a = 1, b = 9, size = 1)[0]",
-    "sim_thresh": "numpy.random.default_rng().beta(a = 8, b = 2, size = 1)[0]",
-    "gen_sui_prev": "numpy.random.default_rng().beta(a = 1, b = 100, size = 1)[0]/50",
+    "p_spon_change": "numpy.random.default_rng().beta(a = 3, b = 27, size = 1)[0]",
+    "p_emul": "numpy.random.default_rng().beta(a = 3, b = 27, size = 1)[0]",
+    "sim_thresh": "numpy.random.default_rng().beta(a = 70, b = 30, size = 1)[0]",
+    "gen_sui_prev": "numpy.random.default_rng().beta(a = 3, b = 97, size = 1)[0]/50",
     "gen_ave_beh": 2,
     "intervention_params": [
         {
-            "intv_class_name": "MockInterventionA",
-            "start_tick": 325,
+            "intv_class_name": "IndividualIntervention",
+            "start_tick": 350,
+            "duration": 10,
+            "tar_severity": [
+                0.66,
+                0.99
+            ],
+            "p_rewire": 0,
+            "p_enrolled": "numpy.random.default_rng().uniform(low = .30, high = .50, size = 1)[0]",
+            "p_beh_change": "numpy.random.default_rng().uniform(low = .75, high = 1, size = 1)[0]"
+        },
+        {
+            "intv_class_name": "NetworkIntervention",
+            "start_tick": 350,
             "duration": 10,
             "tar_severity": [
                 0.33,
                 0.66
             ],
-            "p_rewire": 0,
-            "p_enrolled": "numpy.random.default_rng().uniform(low = .75, high = 1, size = 1)[0]",
-            "p_beh_change": "numpy.random.default_rng().uniform(low = .50, high = 1, size = 1)[0]"
-        },
-        {
-            "intv_class_name": "MockInterventionB",
-            "start_tick": 325,
-            "duration": 10,
-            "tar_severity": [
-                0.66,
-                1
-            ],
             "p_rewire": "numpy.random.default_rng().uniform(low = 0, high = .75, size = 1)[0]",
-            "p_enrolled": "numpy.random.default_rng().uniform(low = .10, high = .30, size = 1)[0]",
+            "p_enrolled": "numpy.random.default_rng().uniform(low = .50, high = 1, size = 1)[0]",
             "p_beh_change": "numpy.random.default_rng().uniform(low = .50, high = 1, size = 1)[0]"
         }
     ]
